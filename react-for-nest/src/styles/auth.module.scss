@@ -1,10 +1,10 @@
-$color-white: #ffffff;
-$color-light: #f1f5f9;
-$color-black: #121212;
+$color-white: #151b16;
+$color-light: #0b0d0c;
+$color-black: #f0f5ee;
 $color-night: #001632;
 
 $color-red: #f44336;
-$color-blue: #1a73e8;
+$color-blue: #c4f46d;
 $color-gray: #80868b;
 $color-grayish: #dadce0;
 
@@ -14,6 +14,9 @@ $shadow-large: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0,
 
 .login-page,
 .register-page {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: radial-gradient(ellipse at top left, #26351c, #0b0d0c 55%) !important;
+    :global(.ant-btn-primary) { background: #c4f46d; color: #15200b; font-weight: 700; width: 100%; }
     color: $color-black;
     background: $color-light;
 
@@ -67,9 +70,9 @@ $shadow-large: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0,
             width: 100%;
             margin: 2rem auto;
             padding: 2rem 2.5rem;
-            border: none;
+            border: 1px solid #33402e;
             outline: none;
-            border-radius: 0.5rem;
+            border-radius: 1.5rem;
             color: $color-black;
             background: $color-white;
             box-shadow: $shadow-large;

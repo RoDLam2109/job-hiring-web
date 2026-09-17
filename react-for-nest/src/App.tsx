@@ -30,6 +30,8 @@ import ClientJobPage from './pages/job';
 import ClientJobDetailPage from './pages/job/detail';
 import ClientCompanyPage from './pages/company';
 import ClientCompanyDetailPage from './pages/company/detail';
+import DarkTheme from './components/share/dark-theme';
+import clientStyles from './styles/client.module.scss';
 
 const LayoutClient = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -44,13 +46,13 @@ const LayoutClient = () => {
   }, [location]);
 
   return (
-    <div className='layout-app' ref={rootRef}>
+    <DarkTheme><div className={clientStyles['client-shell']} ref={rootRef}>
       <Header searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
       <div className={styles['content-app']}>
         <Outlet context={[searchTerm, setSearchTerm]} />
       </div>
       <Footer />
-    </div>
+    </div></DarkTheme>
   )
 }
 
@@ -149,12 +151,12 @@ export default function App() {
 
     {
       path: "/login",
-      element: <LoginPage />,
+      element: <DarkTheme><LoginPage /></DarkTheme>,
     },
 
     {
       path: "/register",
-      element: <RegisterPage />,
+      element: <DarkTheme><RegisterPage /></DarkTheme>,
     },
   ]);
 

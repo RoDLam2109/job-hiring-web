@@ -48,14 +48,16 @@ const ClientCompanyDetailPage = (props: any) => {
                                 </div>
 
                                 <Divider />
-                                {parse(companyDetail?.description ?? "")}
+                                <div className={styles["description"]}>
+                                    {parse(companyDetail?.description ?? "")}
+                                </div>
                             </Col>
 
                             <Col span={24} md={8}>
                                 <div className={styles["company"]}>
                                     <div>
                                         <img
-                                            alt="example"
+                                            alt={companyDetail.name}
                                             src={`${import.meta.env.VITE_BACKEND_URL}/images/company/${companyDetail?.logo}`}
                                         />
                                     </div>

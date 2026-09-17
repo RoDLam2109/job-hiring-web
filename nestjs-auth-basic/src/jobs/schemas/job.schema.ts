@@ -3,16 +3,12 @@ import mongoose, { HydratedDocument } from 'mongoose';
 
 export type JobDocument = HydratedDocument<Job>;
 
-@Schema({ timestamps: true })
 export class Job {
     @Prop()
     name: string;
 
     @Prop({ required: true })
     skills: string[];
-
-    @Prop()
-    password: string;
 
     @Prop({ type: Object })
     company: {
@@ -25,7 +21,7 @@ export class Job {
     salary: number;
 
     @Prop()
-    quantity: string;
+    quantity: number;
 
     @Prop()
     level: string;
@@ -43,7 +39,7 @@ export class Job {
     endDate: Date;
 
     @Prop()
-    isActive: Boolean;
+    isActive: boolean;
 
     @Prop({ type: Object })
     createdBy: {

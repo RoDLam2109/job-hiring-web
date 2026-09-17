@@ -76,14 +76,16 @@ const ClientJobDetailPage = (props: any) => {
                                     <HistoryOutlined /> {dayjs(jobDetail.updatedAt).fromNow()}
                                 </div>
                                 <Divider />
-                                {parse(jobDetail.description)}
+                                <div className={styles["description"]}>
+                                    {parse(jobDetail.description)}
+                                </div>
                             </Col>
 
                             <Col span={24} md={8}>
                                 <div className={styles["company"]}>
                                     <div>
                                         <img
-                                            alt="example"
+                                            alt={jobDetail.company?.name ?? "Company logo"}
                                             src={`${import.meta.env.VITE_BACKEND_URL}/images/company/${jobDetail.company?.logo}`}
                                         />
                                     </div>

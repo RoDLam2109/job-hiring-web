@@ -63,7 +63,9 @@ export const convertSlug = (str: string) => {
 }
 
 export const getLocationName = (value: string) => {
-    const locationFilter = LOCATION_LIST.filter(item => item.value === value);
-    if (locationFilter.length) return locationFilter[0].label;
-    return 'unknown'
-}
+    const location = LOCATION_LIST.find(
+        item => item.value === value || item.label === value
+    );
+
+    return location ? location.label : 'unknown';
+};

@@ -5,7 +5,7 @@ import { EnvironmentOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { Alert, Card, Col, Empty, Pagination, Row, Spin } from 'antd';
 import { useState, useEffect } from 'react';
 import { isMobile } from 'react-device-detect';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import styles from 'styles/client.module.scss';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -23,11 +23,17 @@ const JobCard = (props: IProps) => {
     const [error, setError] = useState<string | null>(null);
 
     const [current, setCurrent] = useState(1);
-    const [pageSize, setPageSize] = useState(5);
+    const [pageSize, setPageSize] = useState(6);
     const [total, setTotal] = useState(0);
-    const [filter, setFilter] = useState("");
+    const [params] = useSearchParams();
+    const filterValues: Record<string, any> = {};
+    if (params.getAll('skills').length) filterValues.skills = { $in: params.getAll('skills') };
+    const locations = params.getAll('location').filter(value => value !== 'ALL');
+    if (locations.length) filterValues.location = { $in: locations };
+    const filter = showPagination ? 'filter=' + encodeURIComponent(JSON.stringify(filterValues)) : '';
     const [sortQuery, setSortQuery] = useState("sort=-updatedAt");
     const navigate = useNavigate();
+    useEffect(() => { setCurrent(1); }, [filter]);
 
     useEffect(() => {
         fetchJob();
@@ -83,7 +89,7 @@ const JobCard = (props: IProps) => {
                     <Row gutter={[20, 20]}>
                         <Col span={24}>
                             <div className={isMobile ? styles["dflex-mobile"] : styles["dflex-pc"]}>
-                                <span className={styles["title"]}>Công Việc Mới Nhất</span>
+                                <div><span className={styles["title"]}>Tìm thấy cơ hội. Chạm tới tương lai.</span><p className={styles["section-subtitle"]}>{showPagination ? total + ' cơ hội phù hợp với bạn' : 'Những vị trí mới nhất, sẵn sàng cho bước tiến của bạn.'}</p></div>
                                 {!showPagination &&
                                     <Link to="job">Xem tất cả</Link>
                                 }
@@ -97,6 +103,10 @@ const JobCard = (props: IProps) => {
                                 <Col span={24} md={12} key={item._id}>
                                     <Card className={styles["job-card"]} size="small" title={null} hoverable
                                         onClick={() => handleViewDetailJob(item)}
+                                        role="link"
+                                        tabIndex={0}
+                                        aria-label={`Xem việc làm ${item.name}`}
+                                        onKeyDown={event => { if (event.key === 'Enter') handleViewDetailJob(item); }}
                                     >
                                         <div className={styles["card-job-content"]}>
                                             <div className={styles["card-job-left"]}>
@@ -110,8 +120,9 @@ const JobCard = (props: IProps) => {
                                             </div>
                                             <div className={styles["card-job-right"]}>
                                                 <div className={styles["job-title"]}>{item.name}</div>
+                                                <div className={styles["job-company"]}>{item.company?.name}</div>
                                                 <div className={styles["job-location"]}><EnvironmentOutlined style={{ color: '#58aaab' }} />&nbsp;{getLocationName(item.location)}</div>
-                                                <div><ThunderboltOutlined style={{ color: 'orange' }} />&nbsp;{(item.salary + "")?.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} đ</div>
+                                                <div className={styles["job-salary"]}><ThunderboltOutlined />&nbsp;{(item.salary + "")?.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} đ</div>
                                                 <div className={styles["job-updatedAt"]}>{dayjs(item.updatedAt).fromNow()}</div>
                                             </div>
                                         </div>

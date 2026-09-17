@@ -94,10 +94,14 @@ const CompanyCard = (props: IProps) => {
 
                         {displayCompany?.map(item => {
                             return (
-                                <Col span={24} md={6} key={item._id}>
+                                <Col span={24} sm={12} lg={6} key={item._id}>
                                     <Card
                                         className={styles["company-card"]}
                                         onClick={() => handleViewDetailJob(item)}
+                                        role="link"
+                                        tabIndex={0}
+                                        aria-label={`Xem công ty ${item.name}`}
+                                        onKeyDown={event => { if (event.key === 'Enter') handleViewDetailJob(item); }}
                                         hoverable
                                         cover={
                                             <div className={styles["company-logo-wrap"]}>
