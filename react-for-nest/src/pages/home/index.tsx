@@ -7,7 +7,12 @@ import CompanyCard from '@/components/client/card/company.card';
 const HomePage = () => {
     return (
         <div className={`${styles["container"]} ${styles["home-section"]}`}>
-            <div className="search-content" style={{ marginTop: 20 }}>
+            <div className={styles["home-hero"]}>
+                <div>
+                    <span className={styles["hero-eyebrow"]}>Nền tảng tuyển dụng công nghệ</span>
+                    <h1>Tìm công việc IT phù hợp với bạn</h1>
+                    <p>Khám phá các cơ hội mới tại những công ty công nghệ hàng đầu.</p>
+                </div>
                 <SearchClient />
             </div>
             <Divider />

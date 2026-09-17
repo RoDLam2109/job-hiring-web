@@ -26,20 +26,35 @@ const LoginPage = () => {
     const onFinish = async (values: any) => {
         const { username, password } = values;
         setIsSubmit(true);
+        try {
         const res = await callLogin(username, password);
-        setIsSubmit(false);
         if (res?.data) {
             localStorage.setItem('access_token', res.data.access_token);
             dispatch(setUserLoginInfo(res.data.user))
             message.success('Đăng nhập tài khoản thành công!');
             window.location.href = callback ? callback : '/';
         } else {
+            const responseMessage = Array.isArray(res?.message)
+                ? res.message[0]
+                : res?.message;
+            const isTechnicalError = typeof responseMessage === 'string'
+                && /cannot find module|require stack|node_modules|error:/i.test(responseMessage);
             notification.error({
                 message: "Có lỗi xảy ra",
-                description:
-                    res.message && Array.isArray(res.message) ? res.message[0] : res.message,
+                description: isTechnicalError
+                    ? 'Máy chủ đang gặp lỗi. Vui lòng thử lại sau.'
+                    : responseMessage || 'Không thể đăng nhập. Vui lòng kiểm tra lại thông tin.',
+                duration: 5
+            });
+        }
+        } catch {
+            notification.error({
+                message: "Có lỗi xảy ra",
+                description: 'Không thể kết nối tới máy chủ. Vui lòng thử lại sau.',
                 duration: 5
             })
+        } finally {
+            setIsSubmit(false);
         }
     };
 

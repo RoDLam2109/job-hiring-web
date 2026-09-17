@@ -11,14 +11,17 @@ import { IUser } from './users.interface';
 import { error } from 'console';
 import { isEmpty } from 'class-validator';
 import aqp from 'api-query-params';
-import { Role } from '@/roles/schemas/role.schema';
+import { Role, RoleDocument } from '@/roles/schemas/role.schema';
 
 @Injectable()
 export class UsersService {
 
   constructor(
     @InjectModel(UserM.name)
-    private userModel: SoftDeleteModel<UserDocument>
+    private userModel: SoftDeleteModel<UserDocument>,
+
+    @InjectModel(Role.name)
+    private roleModel: SoftDeleteModel<RoleDocument>,
   ) { }
 
   async findAll(currentPage: number, limitPage: number, qs: string) {
@@ -67,7 +70,7 @@ export class UsersService {
       name: name, email,
       password: hashPassword,
       age, gender, address,
-      role: 'USER',
+      role,
       company, createdBy: {
         _id: user._id,
         email: user.email
@@ -89,11 +92,16 @@ export class UsersService {
       throw new BadRequestException(`Email: ${email} đã tồn tại trên hệ thống ! Vui lòng sử dụng email khác !`)
     }
     const hash = this.getHashPassword(password)
+    const userRole = await this.roleModel.findOne({ name: 'USER' });
+    if (!userRole) {
+      throw new BadRequestException('ChÆ°a cÃ³ role USER trong database.');
+    }
+
     let newRegister = await this.userModel.create({
       name, email,
       password: hash,
       age, gender, address,
-      role: 'USER'
+      role: userRole._id
     })
     return newRegister;
   }
@@ -106,7 +114,7 @@ export class UsersService {
       _id: id
     }).select("-password") //exclude >< include
       .populate({
-        path: Role.name,
+        path: 'role',
         select: { name: 1, _id: 1 }
       });
   }
@@ -120,7 +128,7 @@ export class UsersService {
       email: username
     })
       .populate({
-        path: Role.name,
+        path: 'role',
         select: { name: 1, permissions: 1 }
       });
   }

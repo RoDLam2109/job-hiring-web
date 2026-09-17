@@ -2,7 +2,7 @@ import { callFetchJob } from '@/config/api';
 import { LOCATION_LIST, convertSlug, getLocationName } from '@/config/utils';
 import { IJob } from '@/types/backend';
 import { EnvironmentOutlined, ThunderboltOutlined } from '@ant-design/icons';
-import { Card, Col, Empty, Pagination, Row, Spin } from 'antd';
+import { Alert, Card, Col, Empty, Pagination, Row, Spin } from 'antd';
 import { useState, useEffect } from 'react';
 import { isMobile } from 'react-device-detect';
 import { Link, useNavigate } from 'react-router-dom';
@@ -20,6 +20,7 @@ const JobCard = (props: IProps) => {
 
     const [displayJob, setDisplayJob] = useState<IJob[] | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
 
     const [current, setCurrent] = useState(1);
     const [pageSize, setPageSize] = useState(5);
@@ -33,7 +34,8 @@ const JobCard = (props: IProps) => {
     }, [current, pageSize, filter, sortQuery]);
 
     const fetchJob = async () => {
-        setIsLoading(true)
+        setIsLoading(true);
+        setError(null);
         let query = `current=${current}&pageSize=${pageSize}`;
         if (filter) {
             query += `&${filter}`;
@@ -42,12 +44,19 @@ const JobCard = (props: IProps) => {
             query += `&${sortQuery}`;
         }
 
-        const res = await callFetchJob(query);
-        if (res && res.data) {
-            setDisplayJob(res.data.result);
-            setTotal(res.data.meta.total)
+        try {
+            const res = await callFetchJob(query);
+            if (res?.data) {
+                setDisplayJob(res.data.result);
+                setTotal(res.data.meta.total);
+            } else {
+                setError('Không thể tải danh sách công việc. Hãy kiểm tra backend đang chạy tại cổng 8080.');
+            }
+        } catch {
+            setError('Không thể kết nối tới backend tại http://localhost:8080.');
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false)
     }
 
 
@@ -81,17 +90,22 @@ const JobCard = (props: IProps) => {
                             </div>
                         </Col>
 
+                        {error && <Col span={24}><Alert type="error" message={error} showIcon /></Col>}
+
                         {displayJob?.map(item => {
                             return (
                                 <Col span={24} md={12} key={item._id}>
-                                    <Card size="small" title={null} hoverable
+                                    <Card className={styles["job-card"]} size="small" title={null} hoverable
                                         onClick={() => handleViewDetailJob(item)}
                                     >
                                         <div className={styles["card-job-content"]}>
                                             <div className={styles["card-job-left"]}>
                                                 <img
-                                                    alt="example"
+                                                    alt={`Logo ${item.company?.name || 'company'}`}
                                                     src={`${import.meta.env.VITE_BACKEND_URL}/images/company/${item?.company?.logo}`}
+                                                    onError={(event) => {
+                                                        event.currentTarget.style.visibility = 'hidden';
+                                                    }}
                                                 />
                                             </div>
                                             <div className={styles["card-job-right"]}>
