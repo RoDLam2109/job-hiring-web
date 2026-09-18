@@ -4,24 +4,25 @@ import { callLogin } from 'config/api';
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { setUserLoginInfo } from '@/redux/slice/accountSlide';
+import { useAppSelector } from '@/redux/hooks';
 import styles from 'styles/auth.module.scss';
 
 const LoginPage = () => {
     const navigate = useNavigate();
     const [isSubmit, setIsSubmit] = useState(false);
     const dispatch = useDispatch();
+    const isAuthenticated = useAppSelector(state => state.account.isAuthenticated);
 
     let location = useLocation();
     let params = new URLSearchParams(location.search);
     const callback = params?.get("callback");
 
     useEffect(() => {
-        //đã login => redirect to '/'
-        if (localStorage.getItem('access_token')) {
-            // navigate('/');
-            window.location.href = '/';
+        // Chỉ chuyển trang khi phiên đăng nhập đã được xác nhận.
+        if (isAuthenticated) {
+            navigate('/', { replace: true });
         }
-    }, [])
+    }, [isAuthenticated, navigate])
 
     const onFinish = async (values: any) => {
         const { username, password } = values;
