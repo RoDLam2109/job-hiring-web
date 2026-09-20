@@ -1,9 +1,5 @@
-const RolePage = () => {
-    return (
-        <div>
-            RolePage
-        </div>
-    )
-}
+import AccessPage from '@/components/admin/access/access-page';
 
-export default RolePage;
+export default function RolePage() {
+    return <AccessPage resource="roles" />;
+}

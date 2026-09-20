@@ -12,7 +12,21 @@ import 'react-quill/dist/quill.snow.css';
 import { CheckSquareOutlined } from "@ant-design/icons";
 import enUS from 'antd/lib/locale/en_US';
 import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { IJob } from "@/types/backend";
+
+dayjs.extend(customParseFormat);
+const parseJobDate = (input: any): dayjs.Dayjs | null => {
+    if (dayjs.isDayjs(input)) return input.isValid() ? input : null;
+    let value = input?.$date ?? input;
+    if (value?.$numberLong !== undefined) value = Number(value.$numberLong);
+    if (value === undefined || value === null || value === '') return null;
+    const parsed = typeof value === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(value)
+        ? dayjs(value, 'DD/MM/YYYY', true)
+        : typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+            ? dayjs(value, 'YYYY-MM-DD', true) : dayjs(value);
+    return parsed.isValid() ? parsed : null;
+};
 
 const ViewUpsertJob = (props: any) => {
     const [companies, setCompanies] = useState<ICompanySelect[]>([]);
@@ -43,6 +57,8 @@ const ViewUpsertJob = (props: any) => {
 
                     form.setFieldsValue({
                         ...res.data,
+                        startDate: parseJobDate(res.data.startDate),
+                        endDate: parseJobDate(res.data.endDate),
                         company: {
                             label: res.data.company?.name as string,
                             value: `${res.data.company?._id}@#$${res.data.company?.logo}` as string,
@@ -73,6 +89,16 @@ const ViewUpsertJob = (props: any) => {
     }
 
     const onFinish = async (values: any) => {
+        const startDate = parseJobDate(values.startDate);
+        const endDate = parseJobDate(values.endDate);
+        if (!startDate || !endDate) {
+            message.error('Vui lòng chọn ngày bắt đầu và ngày kết thúc hợp lệ.');
+            return;
+        }
+        if (endDate.isBefore(startDate, 'day')) {
+            message.error('Ngày kết thúc không được trước ngày bắt đầu.');
+            return;
+        }
         if (dataUpdate?._id) {
             //update
             const cp = values?.company?.value?.split('@#$');
@@ -89,8 +115,8 @@ const ViewUpsertJob = (props: any) => {
                 quantity: values.quantity,
                 level: values.level,
                 description: value,
-                startDate: /[0-9]{2}[/][0-9]{2}[/][0-9]{4}$/.test(values.startDate) ? dayjs(values.startDate, 'DD/MM/YYYY').toDate() : values.startDate,
-                endDate: /[0-9]{2}[/][0-9]{2}[/][0-9]{4}$/.test(values.endDate) ? dayjs(values.endDate, 'DD/MM/YYYY').toDate() : values.endDate,
+                startDate: startDate.toDate(),
+                endDate: endDate.toDate(),
                 isActive: values.isActive
             }
 
@@ -120,8 +146,8 @@ const ViewUpsertJob = (props: any) => {
                 quantity: values.quantity,
                 level: values.level,
                 description: value,
-                startDate: dayjs(values.startDate, 'DD/MM/YYYY').toDate(),
-                endDate: dayjs(values.endDate, 'DD/MM/YYYY').toDate(),
+                startDate: startDate.toDate(),
+                endDate: endDate.toDate(),
                 isActive: values.isActive
             }
 
@@ -159,6 +185,7 @@ const ViewUpsertJob = (props: any) => {
 
                 <ConfigProvider locale={enUS}>
                     <ProForm
+                        dateFormatter={false}
                         form={form}
                         onFinish={onFinish}
                         submitter={
@@ -279,12 +306,11 @@ const ViewUpsertJob = (props: any) => {
                                 <ProFormDatePicker
                                     label="Ngày bắt đầu"
                                     name="startDate"
-                                    normalize={(value) => value && dayjs(value, 'DD/MM/YYYY')}
                                     fieldProps={{
                                         format: 'DD/MM/YYYY',
 
                                     }}
-                                    rules={[{ required: true, message: 'Vui lòng chọn ngày cấp' }]}
+                                    rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu hợp lệ' }]}
                                     placeholder="dd/mm/yyyy"
                                 />
                             </Col>
@@ -292,13 +318,12 @@ const ViewUpsertJob = (props: any) => {
                                 <ProFormDatePicker
                                     label="Ngày kết thúc"
                                     name="endDate"
-                                    normalize={(value) => value && dayjs(value, 'DD/MM/YYYY')}
                                     fieldProps={{
                                         format: 'DD/MM/YYYY',
 
                                     }}
                                     // width="auto"
-                                    rules={[{ required: true, message: 'Vui lòng chọn ngày cấp' }]}
+                                    rules={[{ required: true, message: 'Vui lòng chọn ngày kết thúc hợp lệ' }]}
                                     placeholder="dd/mm/yyyy"
                                 />
                             </Col>

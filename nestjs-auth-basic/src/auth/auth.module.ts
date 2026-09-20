@@ -10,9 +10,11 @@ import ms from 'ms'
 import { AuthController } from './auth.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '@/users/schemas/user.schema';
+import { RolesModule } from '@/roles/roles.module';
 
 @Module({
   imports: [UsersModule, PassportModule,
+    RolesModule,
     MongooseModule.forFeature([{
       name: User.name,
       schema: UserSchema

@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ValidationPipe } from '@nestjs/common';
 import { ResumesService } from './resumes.service';
 import { CreateResumeDto, CreateUserCvDto } from './dto/create-resume.dto';
 import { UpdateResumeDto } from './dto/update-resume.dto';
-import { Public, ResponseMessage, User } from '@/decorator/customize';
+import { Public, ResponseMessage, SkipPermission, User } from '@/decorator/customize';
 import { IUser } from '@/users/users.interface';
 
 @Controller('resumes')
@@ -11,7 +11,7 @@ export class ResumesController {
 
   @Post()
   @ResponseMessage('Create a new resume')
-  create(@Body() createResumeDto: CreateUserCvDto, @User() user: IUser) {
+  create(@Body(new ValidationPipe({ transform: true })) createResumeDto: CreateUserCvDto, @User() user: IUser) {
     return this.resumesService.create(createResumeDto, user);
   }
 
@@ -26,9 +26,17 @@ export class ResumesController {
   }
 
   @Post('by-user')
+  @SkipPermission()
   @ResponseMessage('Fetch resume by user')
   getResumeByUser(@User() user: IUser) {
     return this.resumesService.findByUser(user);
+  }
+
+  @Delete('by-user/:id')
+  @SkipPermission()
+  @ResponseMessage('Delete own resume')
+  removeOwn(@Param('id') id: string, @User() user: IUser) {
+    return this.resumesService.removeOwn(id, user);
   }
 
   @Public()

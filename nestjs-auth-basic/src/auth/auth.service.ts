@@ -9,6 +9,7 @@ import { User, UserDocument } from '@/users/schemas/user.schema';
 import { Company } from '@/companies/schemas/company.schemas';
 import { ConfigService } from '@nestjs/config';
 import ms from 'ms';
+import { RolesService } from '../roles/roles.service';
 import { UpdateUserDto } from '@/users/dto/update-user.dto';
 import { Request as ExpressReq, Response } from 'express'
 
@@ -17,6 +18,7 @@ export class AuthService {
     constructor(private usersService: UsersService,
         private jwtService: JwtService,
         private configService: ConfigService,
+        private rolesService: RolesService,
         @InjectModel(User.name)
         private userModel: SoftDeleteModel<UserDocument>
     ) { }
@@ -28,7 +30,16 @@ export class AuthService {
         if (user) {
             const isValid = this.usersService.isValidPassword(pass, user.password)
             if (isValid === true) {
-                return user;
+                const userRole = user.role as unknown as { _id: string; name: string } | null;
+                const role = userRole?._id
+                    ? await this.rolesService.findOne(userRole._id)
+                    : null;
+
+                const objUser = {
+                    ...user.toObject(),
+                    permissions: role?.permissions ?? [],
+                };
+                return objUser;
             }
         }
         return null;
@@ -93,8 +104,7 @@ export class AuthService {
                 secret: this.configService.get<string>('JWT_REFRESH_TOKEN_SECRET')
             })
 
-            //todo
-            let user = await this.usersService.findUserByToken(refresh_token);
+            const user = await this.usersService.findUserByToken(refresh_token);
             if (user) {
                 // update refresh token
                 const { _id, name, email, role } = user;
@@ -113,6 +123,10 @@ export class AuthService {
                 // update user with refresh token
                 await this.usersService.updateUserToken(_id.toString(), refresh_token)
 
+                // fetch user's role
+                const userRole = user.role as unknown as { _id: string; name: string };
+                const temp = await this.rolesService.findOne(userRole._id);
+
                 response.clearCookie('refresh_token');
                 //set refresh token as cookies
                 response.cookie('refresh_token', refresh_token,
@@ -128,7 +142,8 @@ export class AuthService {
                         _id,
                         name,
                         email,
-                        role
+                        role,
+                        permissions: temp?.permissions ?? [],
                     }
                 };
 
@@ -149,4 +164,3 @@ export class AuthService {
         return 'ok'
     }
 }
-

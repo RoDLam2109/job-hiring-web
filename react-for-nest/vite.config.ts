@@ -23,6 +23,8 @@ export default defineConfig(({ command, mode }) => {
       port: parseInt(env.PORT)
     },
     resolve: {
+      // DatePicker and ProForm must share the same Day.js plugins/prototype.
+      dedupe: ['dayjs'],
       alias: {
         "@": path.resolve(__dirname, "./src/"),
         components: `${path.resolve(__dirname, "./src/components/")}`,

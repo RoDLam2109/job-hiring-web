@@ -1,6 +1,11 @@
-import { Transform, Type } from 'class-transformer';
-import { ArrayNotEmpty, IsDateString, IsEmail, IsMongoId, IsNotEmpty, IsNotEmptyObject, IsObject, IsString, ValidateNested } from 'class-validator'
-import mongoose from 'mongoose'
+import { Transform } from 'class-transformer';
+import { IsMongoId, IsNotEmpty } from 'class-validator';
+
+// Accept MongoDB Extended JSON IDs from imported job data.
+const normalizeMongoId = ({ value }: { value: unknown }) =>
+    value !== null && typeof value === 'object' && '$oid' in value
+        ? (value as { $oid: unknown }).$oid
+        : value;
 
 export class CreateResumeDto {
     @IsNotEmpty({ message: 'email không được để trống' })
@@ -27,9 +32,13 @@ export class CreateUserCvDto {
     @IsNotEmpty({ message: 'url không được để trống' })
     url: string
 
+    @Transform(normalizeMongoId, { toClassOnly: true })
+    @IsMongoId({ message: 'companyId phải là MongoDB ObjectId hợp lệ' })
     @IsNotEmpty({ message: 'companyId không được để trống' })
     companyId: string
 
+    @Transform(normalizeMongoId, { toClassOnly: true })
+    @IsMongoId({ message: 'jobId phải là MongoDB ObjectId hợp lệ' })
     @IsNotEmpty({ message: 'jobId không được để trống' })
     jobId: string
 

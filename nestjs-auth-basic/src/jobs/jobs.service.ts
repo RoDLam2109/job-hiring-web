@@ -8,100 +8,127 @@ import { IUser } from '@/users/users.interface';
 import mongoose from 'mongoose';
 import { isEmpty } from 'class-validator';
 import aqp from 'api-query-params';
+
 @Injectable()
 export class JobsService {
   constructor(
     @InjectModel(Job.name)
     private jobModel: SoftDeleteModel<JobDocument>,
-  ) { }
+  ) {}
+
   async create(createJobDto: CreateJobDto, user: IUser) {
-    const { name, skills, salary, quantity, level,
-      description, company, startDate, location } = createJobDto
-    const isExist = await this.jobModel.findOne({ name })
+    const { name } = createJobDto;
+
+    const isExist = await this.jobModel.findOne({ name });
+
     if (isExist) {
-      throw new BadRequestException(`Name: ${name} đã tồn tại trên hệ thống ! Vui lòng sử dụng tên khác !`)
+      throw new BadRequestException(
+        `Name: ${name} đã tồn tại trên hệ thống ! Vui lòng sử dụng tên khác !`,
+      );
     }
 
-    let newJob = await this.jobModel.create({
+    const newJob = await this.jobModel.create({
       ...createJobDto,
       createdBy: {
         _id: user._id,
-        email: user.email
-      }
-
+        email: user.email,
+      },
     });
-    const { _id, createdAt } = newJob
-    return { _id, createdAt };
+
+    const { _id, createdAt } = newJob;
+
+    return {
+      _id,
+      createdAt,
+    };
   }
 
-  async findAll(currentPage: number, pageSize: number, qs: string) {
+  async findAll(
+    currentPage: number,
+    pageSize: number,
+    qs: string,
+  ) {
     const { filter, sort, population } = aqp(qs);
+
     delete filter.current;
     delete filter.pageSize;
-    let offset = (+currentPage - 1) * (+pageSize);
-    let defaultLimit = +pageSize ? +pageSize : 10;
+
+    const offset = (+currentPage - 1) * (+pageSize);
+    const defaultLimit = +pageSize ? +pageSize : 10;
 
     const totalItems = (await this.jobModel.find(filter)).length;
     const totalPages = Math.ceil(totalItems / defaultLimit);
-    let sortBy = sort
+
+    let sortBy = sort;
+
     if (isEmpty(sort)) {
-      // @ts-ignore: Unreachable code error
-      sortBy = "-updatedAt"
+      // @ts-ignore
+      sortBy = '-updatedAt';
     }
 
-    const result = await this.jobModel.find(filter)
+    const result = await this.jobModel
+      .find(filter)
       .skip(offset)
       .limit(defaultLimit)
-      // ignore a line below @ts-ignore: Unreachable code error
       .sort(sortBy as any)
       .populate(population)
       .exec();
+
     return {
       meta: {
-        current: currentPage, // trang hiện tại
-        pageSize: pageSize, // số lượng bản ghi đã lấy
-        pages: totalPages, // tổng số trang với điều kiện query
-        total: totalItems // tổng số phần tử (số bản ghi)
+        current: currentPage,
+        pageSize: pageSize,
+        pages: totalPages,
+        total: totalItems,
       },
-      result // kết quả query
-    }
+      result,
+    };
   }
 
-  findOne(_id: string) {
+  async findOne(_id: string) {
     if (!mongoose.Types.ObjectId.isValid(_id)) {
-      throw new BadRequestException(`id ${_id} không hợp lệ`)
+      throw new BadRequestException(`id ${_id} không hợp lệ`);
     }
-    return this.jobModel.findOne({ _id });
+
+    return await this.jobModel.findOne({ _id });
   }
 
-  async update(_id: string, updateJobDto: UpdateJobDto, user: IUser) {
+  async update(
+    _id: string,
+    updateJobDto: UpdateJobDto,
+    user: IUser,
+  ) {
     if (!mongoose.Types.ObjectId.isValid(_id)) {
-      throw new BadRequestException(`id ${_id} không hợp lệ`)
+      throw new BadRequestException(`id ${_id} không hợp lệ`);
     }
+
     return await this.jobModel.updateOne(
       { _id },
       {
         ...updateJobDto,
         updatedBy: {
           _id: user._id,
-          email: user.email
-        }
-      });
+          email: user.email,
+        },
+      },
+    );
   }
 
   async remove(_id: string, user: IUser) {
     if (!mongoose.Types.ObjectId.isValid(_id)) {
-      throw new BadRequestException(`id ${_id} không hợp lệ`)
+      throw new BadRequestException(`id ${_id} không hợp lệ`);
     }
+
     await this.jobModel.updateOne(
       { _id },
       {
         deletedBy: {
           _id: user._id,
-          email: user.email
-        }
-      }
-    )
+          email: user.email,
+        },
+      },
+    );
+
     return await this.jobModel.softDelete({ _id });
   }
 }

@@ -1,12 +1,16 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import axios from '@/config/axios-customize';
 import { callFetchAccount } from '@/config/api';
+import type { IAccount } from '@/types/backend';
 
 // First, create the thunk
 export const fetchAccount = createAsyncThunk(
     'account/fetchAccount',
     async () => {
         const response = await callFetchAccount();
+        if (!response?.data?.user) {
+            throw new Error('Không thể lấy thông tin tài khoản');
+        }
         return response.data;
     }
 )
@@ -21,7 +25,7 @@ const initialState = {
         name: "",
         phone: "",
         _id: "",
-        role: "ADMIN",
+        role: null as IAccount['user']['role'],
     },
     activeMenu: 'home'
 };
@@ -64,10 +68,7 @@ export const accountSlide = createSlice({
     extraReducers: (builder) => {
         // Add reducers for additional action types here, and handle loading state as needed
         builder.addCase(fetchAccount.pending, (state, action) => {
-            if (action.payload) {
-                state.isAuthenticated = false;
-                state.isLoading = true;
-            }
+            state.isLoading = true;
         })
 
         builder.addCase(fetchAccount.fulfilled, (state, action) => {
@@ -79,10 +80,8 @@ export const accountSlide = createSlice({
         })
 
         builder.addCase(fetchAccount.rejected, (state, action) => {
-            if (action.payload) {
-                state.isAuthenticated = false;
-                state.isLoading = false;
-            }
+            state.isAuthenticated = false;
+            state.isLoading = false;
         })
 
     },

@@ -12,6 +12,7 @@ import { error } from 'console';
 import { isEmpty } from 'class-validator';
 import aqp from 'api-query-params';
 import { Role, RoleDocument } from '@/roles/schemas/role.schema';
+import { USER_ROLE } from '../databases/sample';
 
 @Injectable()
 export class UsersService {
@@ -91,17 +92,19 @@ export class UsersService {
     if (isExist) {
       throw new BadRequestException(`Email: ${email} đã tồn tại trên hệ thống ! Vui lòng sử dụng email khác !`)
     }
-    const hash = this.getHashPassword(password)
-    const userRole = await this.roleModel.findOne({ name: 'USER' });
+    // Fetch user role before creating the account.
+    const userRole = await this.roleModel.findOne({ name: USER_ROLE });
+
     if (!userRole) {
-      throw new BadRequestException('ChÆ°a cÃ³ role USER trong database.');
+      throw new BadRequestException(`Chưa có role ${USER_ROLE} trong database.`);
     }
 
+    const hashPassword = this.getHashPassword(password);
     let newRegister = await this.userModel.create({
       name, email,
-      password: hash,
+      password: hashPassword,
       age, gender, address,
-      role: userRole._id
+      role: userRole?._id
     })
     return newRegister;
   }
@@ -129,7 +132,7 @@ export class UsersService {
     })
       .populate({
         path: 'role',
-        select: { name: 1, permissions: 1 }
+        select: { name: 1 }
       });
   }
 
@@ -154,7 +157,7 @@ export class UsersService {
     }
 
     const foundUser = await this.userModel.findById(id)
-    if (foundUser.email === 'admin@gmail.com') {
+    if (foundUser && foundUser.email === 'admin@gmail.com') {
       throw new BadRequestException('Không thể xóa tài khoản admin')
     }
 
@@ -190,5 +193,9 @@ export class UsersService {
 
   findUserByToken = async (refreshToken: string) => {
     return await this.userModel.findOne({ refreshToken })
+      .populate({
+        path: 'role',
+        select: { name: 1 }
+      })
   }
 }

@@ -20,10 +20,13 @@ const ApplyModal = (props: IProps) => {
     const isAuthenticated = useAppSelector(state => state.account.isAuthenticated);
     const user = useAppSelector(state => state.account.user);
     const [urlCV, setUrlCV] = useState<string>("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
 
     const navigate = useNavigate();
 
     const handleOkButton = async () => {
+        if (isSubmitting || isUploading) return;
         if (!urlCV && isAuthenticated) {
             message.error("Vui lòng upload CV!");
             return;
@@ -34,8 +37,12 @@ const ApplyModal = (props: IProps) => {
             navigate(`/login?callback=${window.location.href}`)
         }
         else {
-            //todo
-            if (jobDetail) {
+            if (!jobDetail?._id || !jobDetail.company?._id) {
+                message.error("Thiếu thông tin công việc hoặc công ty. Vui lòng tải lại trang.");
+                return;
+            }
+            setIsSubmitting(true);
+            try {
                 const res = await callCreateResume(urlCV, jobDetail?.company?._id, jobDetail?._id);
                 if (res.data) {
                     message.success("Rải CV thành công!");
@@ -43,9 +50,16 @@ const ApplyModal = (props: IProps) => {
                 } else {
                     notification.error({
                         message: 'Có lỗi xảy ra',
-                        description: res.message
+                        description: Array.isArray(res.message) ? res.message.join("; ") : res.message
                     });
                 }
+            } catch (error) {
+                notification.error({
+                    message: 'Không thể gửi CV',
+                    description: error instanceof Error ? error.message : 'Vui lòng thử lại.',
+                });
+            } finally {
+                setIsSubmitting(false);
             }
         }
     }
@@ -53,8 +67,12 @@ const ApplyModal = (props: IProps) => {
     const propsUpload: UploadProps = {
         maxCount: 1,
         multiple: false,
+        disabled: isSubmitting || isUploading,
         accept: "application/pdf,application/msword, .doc, .docx, .pdf",
         async customRequest({ file, onSuccess, onError }: any) {
+            setUrlCV("");
+            setIsUploading(true);
+            try {
             const res = await callUploadSingleFile(file, "resume");
             if (res && res.data) {
                 setUrlCV(res.data.fileName);
@@ -66,6 +84,15 @@ const ApplyModal = (props: IProps) => {
                     onError({ event: error });
                 }
             }
+            } catch (error) {
+                setUrlCV("");
+                onError?.({ event: error instanceof Error ? error : new Error('Không thể tải CV lên.') });
+            } finally {
+                setIsUploading(false);
+            }
+        },
+        onRemove() {
+            setUrlCV("");
         },
         onChange(info) {
             if (info.file.status !== 'uploading') {
@@ -85,6 +112,8 @@ const ApplyModal = (props: IProps) => {
             <Modal title="Ứng Tuyển Job"
                 open={isModalOpen}
                 onOk={() => handleOkButton()}
+                confirmLoading={isSubmitting}
+                okButtonProps={{ disabled: isUploading }}
                 onCancel={() => setIsModalOpen(false)}
                 maskClosable={false}
                 okText={isAuthenticated ? "Rải CV Nào " : "Đăng Nhập Nhanh"}

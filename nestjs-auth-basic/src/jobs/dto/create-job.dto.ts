@@ -42,9 +42,10 @@ export class CreateJobDto {
     location: string
 
     @IsNotEmpty({ message: 'startDate không được để trống' })
+    @IsDateString({ strict: true }, { message: 'Ngày bắt đầu phải là ngày hợp lệ theo định dạng ISO 8601' })
     startDate: Date
 
     @IsNotEmpty({ message: 'endDate không được để trống' })
-    @IsDateString({}, { message: 'Ngày kết thúc phải ở dạng YYYY-MM-DD' })
+    @IsDateString({ strict: true }, { message: 'Ngày kết thúc phải là ngày hợp lệ theo định dạng ISO 8601' })
     endDate: Date
 }

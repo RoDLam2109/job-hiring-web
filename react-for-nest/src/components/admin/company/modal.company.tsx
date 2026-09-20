@@ -5,7 +5,7 @@ import 'styles/reset.scss';
 import { isMobile } from 'react-device-detect';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { callCreateCompany, callUpdateCompany, callUploadSingleFile } from "@/config/api";
 import { ICompany } from "@/types/backend";
 import { v4 as uuidv4 } from 'uuid';
@@ -43,15 +43,26 @@ const ModalCompany = (props: IProps) => {
 
     const [value, setValue] = useState<string>("");
     const [form] = Form.useForm();
+    const uploadVersion = useRef(0);
+    const uploadPending = useRef(false);
 
     useEffect(() => {
-        if (dataInit?._id && dataInit?.description) {
-            setValue(dataInit.description);
-        }
-    }, [dataInit])
+        uploadVersion.current += 1;
+        uploadPending.current = false;
+        setLoadingUpload(false);
+        setValue(openModal ? dataInit?.description ?? '' : '');
+        setDataLogo(openModal && dataInit?._id && dataInit.logo
+            ? [{ name: dataInit.logo, uid: uuidv4() }] : []);
+        setPreviewOpen(false);
+        return () => { uploadVersion.current += 1; };
+    }, [openModal, dataInit])
 
     const submitCompany = async (valuesForm: ICompanyForm) => {
         const { name, address } = valuesForm;
+        if (uploadPending.current) {
+            message.warning('Vui lòng đợi upload logo hoàn tất.');
+            return;
+        }
 
         if (dataLogo.length === 0) {
             message.error('Vui lòng upload ảnh Logo')
@@ -88,6 +99,12 @@ const ModalCompany = (props: IProps) => {
     }
 
     const handleReset = async () => {
+        uploadVersion.current += 1;
+        uploadPending.current = false;
+        setLoadingUpload(false);
+        setDataLogo([]);
+        setPreviewOpen(false);
+        setPreviewImage('');
         form.resetFields();
         setValue("");
         setDataInit(null);
@@ -100,6 +117,9 @@ const ModalCompany = (props: IProps) => {
     }
 
     const handleRemoveFile = (file: any) => {
+        uploadVersion.current += 1;
+        uploadPending.current = false;
+        setLoadingUpload(false);
         setDataLogo([])
     }
 
@@ -132,35 +152,40 @@ const ModalCompany = (props: IProps) => {
         if (!isLt2M) {
             message.error('Image must smaller than 2MB!');
         }
-        return isJpgOrPng && isLt2M;
+        return (isJpgOrPng && isLt2M) || Upload.LIST_IGNORE;
     };
 
     const handleChange = (info: any) => {
-        if (info.file.status === 'uploading') {
-            setLoadingUpload(true);
-        }
-        if (info.file.status === 'done') {
-            setLoadingUpload(false);
-        }
         if (info.file.status === 'error') {
-            setLoadingUpload(false);
             message.error(info?.file?.error?.event?.message ?? "Đã có lỗi xảy ra khi upload file.")
         }
     };
 
     const handleUploadFileLogo = async ({ file, onSuccess, onError }: any) => {
-        const res = await callUploadSingleFile(file, "company");
-        if (res && res.data) {
-            setDataLogo([{
-                name: res.data.fileName,
-                uid: uuidv4()
-            }])
-            if (onSuccess) onSuccess('ok')
-        } else {
-            if (onError) {
-                setDataLogo([])
-                const error = new Error(res.message);
-                onError({ event: error });
+        const version = ++uploadVersion.current;
+        uploadPending.current = true;
+        setLoadingUpload(true);
+        setDataLogo([]);
+        try {
+            const res = await callUploadSingleFile(file, "company");
+            if (version !== uploadVersion.current) return;
+            if (res?.data?.fileName) {
+                setDataLogo([{
+                    name: res.data.fileName,
+                    uid: uuidv4()
+                }])
+                if (onSuccess) onSuccess('ok')
+            } else {
+                throw new Error(res?.message || 'Không thể upload logo.');
+            }
+        } catch (error) {
+            if (version !== uploadVersion.current) return;
+            setDataLogo([]);
+            onError?.({ event: error instanceof Error ? error : new Error('Không thể kết nối máy chủ.') });
+        } finally {
+            if (version === uploadVersion.current) {
+                uploadPending.current = false;
+                setLoadingUpload(false);
             }
         }
     };
@@ -175,7 +200,6 @@ const ModalCompany = (props: IProps) => {
                         open={openModal}
                         modalProps={{
                             onCancel: () => { handleReset() },
-                            afterClose: () => handleReset(),
                             destroyOnClose: true,
                             width: isMobile ? "100%" : 900,
                             footer: null,
@@ -192,6 +216,7 @@ const ModalCompany = (props: IProps) => {
                         submitter={{
                             render: (_: any, dom: any) => <FooterToolbar>{dom}</FooterToolbar>,
                             submitButtonProps: {
+                                disabled: loadingUpload,
                                 icon: <CheckSquareOutlined />
                             },
                             searchConfig: {
@@ -225,6 +250,8 @@ const ModalCompany = (props: IProps) => {
                                 >
                                     <ConfigProvider locale={enUS}>
                                         <Upload
+                                            accept="image/jpeg,image/png"
+                                            disabled={loadingUpload}
                                             name="logo"
                                             listType="picture-card"
                                             className="avatar-uploader"

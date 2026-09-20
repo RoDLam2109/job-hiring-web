@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserCvDto } from './dto/create-resume.dto';
 import { UpdateResumeDto } from './dto/update-resume.dto';
 import { IUser } from '@/users/users.interface';
@@ -124,9 +124,28 @@ export class ResumesService {
     return await this.resumeModel.softDelete({ _id });
   }
 
+  async removeOwn(_id: string, user: IUser) {
+    if (!mongoose.isObjectIdOrHexString(_id)) {
+      throw new BadRequestException('ID CV không hợp lệ');
+    }
+    const result = await this.resumeModel.updateOne(
+      { _id, userId: user._id, isDeleted: { $ne: true } },
+      { $set: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy: { _id: user._id, email: user.email },
+      } },
+    );
+    if (!result.matchedCount) {
+      throw new NotFoundException('Không tìm thấy CV của bạn hoặc CV đã được xóa');
+    }
+    return { deleted: true };
+  }
+
   async findByUser(user: IUser) {
     return await this.resumeModel.find({
-      userId: user._id
+      userId: user._id,
+      isDeleted: { $ne: true },
     })
       .sort("-createdAt")
       .populate([

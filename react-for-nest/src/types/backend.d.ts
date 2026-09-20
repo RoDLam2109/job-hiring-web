@@ -19,7 +19,7 @@ export interface IAccount {
     access_token: string;
     user: {
         _id: string;
-        role: string;
+        role: string | { _id: string; name: string } | null;
         email: string;
         name: string
     }

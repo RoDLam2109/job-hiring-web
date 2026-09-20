@@ -11,6 +11,7 @@ import { emit } from 'process';
 import { isEmpty } from 'class-validator';
 import aqp from 'api-query-params';
 import mongoose from 'mongoose';
+import { ADMIN_ROLE } from '@/databases/sample';
 
 @Injectable()
 export class RolesService {
@@ -99,7 +100,7 @@ export class RolesService {
     }
 
     const foundRole = await this.roleModel.findById(_id)
-    if (foundRole.name === 'ADMIN') {
+    if (foundRole.name === 'ADMIN_ROLE') {
       throw new BadRequestException('Không thể xóa role admin!')
     }
 

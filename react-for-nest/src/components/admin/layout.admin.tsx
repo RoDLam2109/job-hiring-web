@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AccountModal from '@/components/client/account-modal';
 import {
     AppstoreOutlined,
     ExceptionOutlined,
@@ -30,6 +31,7 @@ const LayoutAdmin = () => {
     const location = useLocation();
 
     const [collapsed, setCollapsed] = useState(false);
+    const [accountOpen, setAccountOpen] = useState(false);
     const [activeMenu, setActiveMenu] = useState('');
     const user = useAppSelector(state => state.account.user);
 
@@ -102,6 +104,11 @@ const LayoutAdmin = () => {
 
     const itemsDropdown = [
         {
+            label: 'Quản lý tài khoản',
+            key: 'account',
+            onClick: () => setAccountOpen(true),
+        },
+        {
             label: <Link to={'/'}>Trang chủ</Link>,
             key: 'home',
         },
@@ -116,6 +123,7 @@ const LayoutAdmin = () => {
 
     return (
         <>
+            <AccountModal open={accountOpen} onClose={() => setAccountOpen(false)} />
             <Layout
                 style={{ minHeight: '100vh' }}
                 className="layout-admin"
