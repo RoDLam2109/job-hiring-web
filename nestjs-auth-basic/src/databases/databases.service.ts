@@ -6,7 +6,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
-import { ADMIN_ROLE, INIT_PERMISSIONS, USER_ROLE } from './sample';
+import { ADMIN_ROLE, HR_ROLE, INIT_PERMISSIONS, USER_ROLE } from './sample';
 
 @Injectable()
 export class DatabasesService implements OnModuleInit {
@@ -47,7 +47,12 @@ export class DatabasesService implements OnModuleInit {
 
     // Create the default roles after permissions are available.
     if (countRole === 0) {
-      const permissions = await this.permissionModel.find({}).select('_id');
+      const permissions = await this.permissionModel.find({});
+
+      const resumePermissions = permissions.filter(
+        permission => permission.module === 'RESUMES'
+      );
+
       await this.roleModel.insertMany([
         {
           name: ADMIN_ROLE,
@@ -55,6 +60,14 @@ export class DatabasesService implements OnModuleInit {
           isActive: true,
           permissions: permissions.map(permission => permission._id),
         },
+
+        {
+          name: HR_ROLE,
+          description: 'Nhân sự',
+          isActive: true,
+          permissions: resumePermissions.map(permission => permission._id),
+        },
+
         {
           name: USER_ROLE,
           description: 'Người dùng/Ứng viên sử dụng hệ thống',
@@ -63,14 +76,14 @@ export class DatabasesService implements OnModuleInit {
         },
       ]);
     }
-
     // Create sample users after their roles are available.
     if (countUser === 0) {
       const adminRole = await this.roleModel.findOne({ name: ADMIN_ROLE });
       const userRole = await this.roleModel.findOne({ name: USER_ROLE });
+      const hrRole = await this.roleModel.findOne({ name: HR_ROLE })
 
-      if (!adminRole || !userRole) {
-        throw new Error('SUPER_ADMIN and NORMAL_USER roles are required to create sample users.');
+      if (!adminRole || !userRole || !hrRole) {
+        throw new Error('SUPER_ADMIN and NORMAL_USER and HR roles are required to create sample users.');
       }
 
       await this.userModel.insertMany([
@@ -90,7 +103,7 @@ export class DatabasesService implements OnModuleInit {
           age: '96',
           gender: 'MALE',
           address: 'VietNam',
-          role: adminRole._id,
+          role: hrRole._id,
         },
         {
           name: "I'm normal user",

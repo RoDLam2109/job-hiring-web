@@ -1,6 +1,6 @@
 export const ADMIN_ROLE = 'SUPER_ADMIN';
 export const USER_ROLE = 'NORMAL_USER';
-
+export const HR_ROLE = 'HR'
 // Du lieu quyen mau cho cac API hien co. Chi duoc luu khi goi seed database.
 export const INIT_PERMISSIONS = [
   {
@@ -166,7 +166,7 @@ export const INIT_PERMISSIONS = [
   {
     "_id": "650000000000000000001009",
     "name": "Update User",
-    "apiPath": "/api/v1/users",
+    "apiPath": "/api/v1/users/:id",
     "method": "PATCH",
     "module": "USERS",
     "createdBy": {

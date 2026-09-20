@@ -1,37 +1,36 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { CreateRoleDto } from './dto/create-role.dto';
-import { UpdateRoleDto } from './dto/update-role.dto';
+import { CreateSubcriberDto } from './dto/create-subcribers.dto';
+import { UpdateSubcriberDto } from './dto/update-subcribers.dto';
 import { IUser } from '@/users/users.interface';
+import mongoose from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { Role, RoleDocument } from './schemas/role.schema';
-import { privateEncrypt } from 'crypto';
+import { Subcriber, SubcriberDocument } from './schemas/subcribers.schemas';
 import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
-import { createInvalidObservableTypeError } from 'rxjs/internal/util/throwUnobservableError';
-import { emit } from 'process';
 import { isEmpty } from 'class-validator';
 import aqp from 'api-query-params';
-import mongoose from 'mongoose';
-import { ADMIN_ROLE } from '@/databases/sample';
 
 @Injectable()
-export class RolesService {
+export class SubcribersService {
   constructor(
-    @InjectModel(Role.name)
-    private roleModel: SoftDeleteModel<RoleDocument>,
+    @InjectModel(Subcriber.name)
+    private subcriberModel: SoftDeleteModel<SubcriberDocument>,
   ) { }
-  async create(createRoleDto: CreateRoleDto, user: IUser) {
-    const { name } = createRoleDto
-    if (await this.roleModel.findOne({ name })) {
-      throw new BadRequestException(`Role ${name} đã tồn tại! Vui lòng đặt 1 cái tên khác.`)
+  async create(createSubcriberDto: CreateSubcriberDto, user: IUser) {
+    const { email } = createSubcriberDto
+    if (await this.subcriberModel.findOne({ email })) {
+      throw new BadRequestException(`Email ${email} đã tồn tại! Vui lòng đặt 1 cái tên khác.`)
     }
-    const { _id, createdAt } = await this.roleModel.create({
-      ...createRoleDto,
+    const newSubcriber = await this.subcriberModel.create({
+      ...createSubcriberDto,
       createdBy: {
         _id: user._id,
         email: user.email
       }
     })
-    return { _id, createdAt }
+    return {
+      name: newSubcriber.name,
+      email: newSubcriber.email
+    }
   }
 
   async findAll(currentPage: number, pageSize: number, qs: string) {
@@ -41,7 +40,7 @@ export class RolesService {
     let offset = (+currentPage - 1) * (+pageSize);
     let defaultLimit = +pageSize ? +pageSize : 10;
 
-    const totalItems = (await this.roleModel.find(filter)).length;
+    const totalItems = (await this.subcriberModel.find(filter)).length;
     const totalPages = Math.ceil(totalItems / defaultLimit);
     let sortBy = sort
     if (isEmpty(sort)) {
@@ -49,7 +48,7 @@ export class RolesService {
       sortBy = "-updatedAt"
     }
 
-    const result = await this.roleModel.find(filter)
+    const result = await this.subcriberModel.find(filter)
       .skip(offset)
       .limit(defaultLimit)
       // ignore a line below @ts-ignore: Unreachable code error
@@ -71,21 +70,17 @@ export class RolesService {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new BadRequestException(`id ${id} không hợp lệ`)
     }
-    return await this.roleModel.findOne({ _id: id })
-      .populate({
-        path: 'permissions',
-        select: { _id: 1, apiPath: 1, name: 1, method: 1, module: 1 }
-      });
+    return await this.subcriberModel.findOne({ _id: id })
   }
 
-  async update(id: string, updateRoleDto: UpdateRoleDto, user: IUser) {
+  async update(id: string, updatesubcriberDto: UpdateSubcriberDto, user: IUser) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new BadRequestException(`id ${id} không hợp lệ`)
     }
-    return await this.roleModel.updateOne(
+    return await this.subcriberModel.updateOne(
       { _id: id },
       {
-        ...updateRoleDto,
+        ...updatesubcriberDto,
         updatedBy: {
           _id: user._id,
           email: user.email
@@ -98,13 +93,7 @@ export class RolesService {
     if (!mongoose.Types.ObjectId.isValid(_id)) {
       throw new BadRequestException(`id ${_id} không hợp lệ`)
     }
-
-    const foundRole = await this.roleModel.findById(_id)
-    if (foundRole.name === ADMIN_ROLE) {
-      throw new BadRequestException('Không thể xóa role admin!')
-    }
-
-    await this.roleModel.updateOne(
+    await this.subcriberModel.updateOne(
       { _id },
       {
         deletedBy: {
@@ -113,6 +102,6 @@ export class RolesService {
         }
       }
     )
-    return await this.roleModel.softDelete({ _id })
+    return await this.subcriberModel.softDelete({ _id })
   }
 }
