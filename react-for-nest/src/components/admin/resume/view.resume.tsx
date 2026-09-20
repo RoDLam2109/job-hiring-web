@@ -3,6 +3,8 @@ import { IResume } from "@/types/backend";
 import { Badge, Button, Descriptions, Drawer, Form, Select, message, notification } from "antd";
 import dayjs from 'dayjs';
 import { useState, useEffect } from 'react';
+import { useAppSelector } from '@/redux/hooks';
+import { hasPermission } from '@/config/permission';
 const { Option } = Select;
 
 interface IProps {
@@ -13,11 +15,14 @@ interface IProps {
     reloadTable: () => void;
 }
 const ViewDetailResume = (props: IProps) => {
+    const user = useAppSelector(state => state.account.user);
+    const canUpdate = hasPermission(user, 'PATCH', '/api/v1/resumes/:id');
     const [isSubmit, setIsSubmit] = useState<boolean>(false);
     const { onClose, open, dataInit, setDataInit, reloadTable } = props;
     const [form] = Form.useForm();
 
     const handleChangeStatus = async () => {
+        if (!canUpdate) return;
         setIsSubmit(true);
 
         const status = form.getFieldValue('status');
@@ -56,7 +61,7 @@ const ViewDetailResume = (props: IProps) => {
                 destroyOnClose
                 extra={
 
-                    <Button loading={isSubmit} type="primary" onClick={handleChangeStatus}>
+                    canUpdate && <Button loading={isSubmit} type="primary" onClick={handleChangeStatus}>
                         Change Status
                     </Button>
 
@@ -70,6 +75,7 @@ const ViewDetailResume = (props: IProps) => {
                         >
                             <Form.Item name={"status"}>
                                 <Select
+                                    disabled={!canUpdate}
                                     // placeholder="Select a option and change input text above"
                                     // onChange={onGenderChange}
                                     // allowClear

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { SubcribersService } from './subcribers.service';
-import { SubcribersController } from './subcribers.controller';
+import { SubscribersService } from './subscribers.service';
+import { SubscribersController } from './subscribers.controller';
 import { Mongoose } from 'mongoose';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Subcriber, SubcriberSchema } from './schemas/subcribers.schemas';
@@ -8,7 +8,7 @@ import { Subcriber, SubcriberSchema } from './schemas/subcribers.schemas';
   imports: [MongooseModule.forFeature([
     { name: Subcriber.name,schema: SubcriberSchema }
   ])],
-  controllers: [SubcribersController],
-  providers: [SubcribersService]
+  controllers: [SubscribersController],
+  providers: [SubscribersService]
 })
 export class SubcribersModule {}

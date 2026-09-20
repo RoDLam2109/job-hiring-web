@@ -26,6 +26,8 @@ const initialState = {
         phone: "",
         _id: "",
         role: null as IAccount['user']['role'],
+        company: null as IAccount['user']['company'],
+        permissions: [] as NonNullable<IAccount['user']['permissions']>,
     },
     activeMenu: 'home'
 };
@@ -45,6 +47,7 @@ export const accountSlide = createSlice({
             state.isLoading = false;
             state.user = {
                 ...state.user,
+                permissions: [],
                 ...action.payload
             }
         },
@@ -56,6 +59,8 @@ export const accountSlide = createSlice({
                 phone: "",
                 _id: "",
                 role: "",
+                company: null,
+                permissions: [],
                 name: ""
             }
         },
@@ -75,7 +80,7 @@ export const accountSlide = createSlice({
             if (action.payload) {
                 state.isAuthenticated = true;
                 state.isLoading = false;
-                state.user = { ...state.user, ...action?.payload?.user }
+                state.user = { ...state.user, permissions: [], ...action?.payload?.user }
             }
         })
 

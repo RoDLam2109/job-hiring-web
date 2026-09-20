@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ValidationPipe } from '@nestjs/common';
 import { ResumesService } from './resumes.service';
-import { CreateResumeDto, CreateUserCvDto } from './dto/create-resume.dto';
+import { CreateUserCvDto } from './dto/create-resume.dto';
 import { UpdateResumeDto } from './dto/update-resume.dto';
-import { Public, ResponseMessage, SkipPermission, User } from '@/decorator/customize';
+import { ResponseMessage, SkipPermission, User } from '@/decorator/customize';
 import { IUser } from '@/users/users.interface';
 
 @Controller('resumes')
@@ -10,19 +10,20 @@ export class ResumesController {
   constructor(private readonly resumesService: ResumesService) { }
 
   @Post()
+  @SkipPermission()
   @ResponseMessage('Create a new resume')
   create(@Body(new ValidationPipe({ transform: true })) createResumeDto: CreateUserCvDto, @User() user: IUser) {
     return this.resumesService.create(createResumeDto, user);
   }
 
-  @Public()
   @Get()
   @ResponseMessage('Fetch resume with pagination')
   findAll(@Query('current') currentPage: string,
     @Query('pageSize') limitPage: string,
     @Query() qs: string,
+    @User() user: IUser,
   ) {
-    return this.resumesService.findAll(+currentPage, +limitPage, qs)
+    return this.resumesService.findAll(+currentPage, +limitPage, qs, user)
   }
 
   @Post('by-user')
@@ -39,11 +40,10 @@ export class ResumesController {
     return this.resumesService.removeOwn(id, user);
   }
 
-  @Public()
   @Get(':id')
   @ResponseMessage('Fetch resume by id')
-  findOne(@Param('id') id: string) {
-    return this.resumesService.findOne(id);
+  findOne(@Param('id') id: string, @User() user: IUser) {
+    return this.resumesService.findOne(id, user);
   }
 
   @Patch(':id')

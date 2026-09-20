@@ -1,22 +1,20 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
+import { canAccessAdminPage, getAdminLandingPath } from '@/config/permission';
 import { useAppSelector } from "@/redux/hooks";
 import NotPermitted from "./not-permitted";
 import Loading from "../loading";
 
 const RoleBaseRoute = (props: any) => {
-    const isAdminRoute = window.location.pathname.startsWith('/admin');
+    const location = useLocation();
+    const pathname = location.pathname.replace(/\/+$/, '');
+    const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
     const user = useAppSelector(state => state.account.user);
-    const userRole = typeof user.role === 'string' ? user.role : user.role?.name;
-    const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN';
-    const isUser = userRole === 'NORMAL_USER' || userRole === 'USER';
-
-    if ((isAdminRoute && isAdmin) ||
-        (!isAdminRoute && (isUser || isAdmin))
-    ) {
-        return (<>{props.children}</>)
-    } else {
-        return (<NotPermitted />)
+    if (!isAdminRoute || canAccessAdminPage(user, pathname, location.search)) {
+        return <>{props.children}</>;
     }
+    const landing = getAdminLandingPath(user);
+    if (pathname === '/admin' && landing) return <Navigate to={landing} replace />;
+    return <NotPermitted />;
 }
 
 const ProtectedRoute = (props: any) => {

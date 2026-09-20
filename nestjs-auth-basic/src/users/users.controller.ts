@@ -3,11 +3,24 @@ import { UsersService } from './users.service';
 import { CreateUserDto, RegisterUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { IUser } from './users.interface';
-import { Public, ResponseMessage, User } from '@/decorator/customize';
+import { Public, ResponseMessage, SkipPermission, User } from '@/decorator/customize';
+import { UpdatePhoneDto, ChangePasswordDto } from './dto/account-settings.dto';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
+
+  @Patch('me/phone')
+  @SkipPermission()
+  updatePhone(@Body() dto: UpdatePhoneDto, @User() user: IUser) {
+    return this.usersService.updatePhone(dto, user);
+  }
+
+  @Patch('me/password')
+  @SkipPermission()
+  changePassword(@Body() dto: ChangePasswordDto, @User() user: IUser) {
+    return this.usersService.changePassword(dto, user);
+  }
 
   @Post()
   @ResponseMessage('Create a new user')
@@ -35,7 +48,7 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
-  @Patch()
+  @Patch(':id')
   @ResponseMessage('Update a new user')
   update(@Body() updateUserDto: UpdateUserDto, @User() user: IUser): Promise<unknown> {
     return this.usersService.update(updateUserDto, user);

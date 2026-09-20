@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
 import { Job, JobDocument } from './schemas/job.schema';
@@ -8,6 +8,7 @@ import { IUser } from '@/users/users.interface';
 import mongoose from 'mongoose';
 import { isEmpty } from 'class-validator';
 import aqp from 'api-query-params';
+import { getHrCompanyId } from '@/users/hr-company';
 
 @Injectable()
 export class JobsService {
@@ -16,7 +17,22 @@ export class JobsService {
     private jobModel: SoftDeleteModel<JobDocument>,
   ) {}
 
+  private companyScope(user?: IUser) {
+    const companyId = getHrCompanyId(user);
+    if (!companyId) return {};
+    // company is a Mixed object: existing records may store its ID as a string or ObjectId.
+    return { 'company._id': { $in: [companyId, new mongoose.Types.ObjectId(companyId)] } };
+  }
+
+  private checkCompany(company: { _id?: unknown } | undefined, user: IUser) {
+    const companyId = getHrCompanyId(user);
+    if (companyId && company !== undefined && String(company?._id) !== companyId) {
+      throw new ForbiddenException('HR chỉ được quản lý việc làm của công ty mình');
+    }
+  }
+
   async create(createJobDto: CreateJobDto, user: IUser) {
+    this.checkCompany(createJobDto.company, user);
     const { name } = createJobDto;
 
     const isExist = await this.jobModel.findOne({ name });
@@ -47,16 +63,18 @@ export class JobsService {
     currentPage: number,
     pageSize: number,
     qs: string,
+    user?: IUser,
   ) {
     const { filter, sort, population } = aqp(qs);
 
     delete filter.current;
     delete filter.pageSize;
+    const scopedFilter = { $and: [filter, this.companyScope(user), { isDeleted: { $ne: true } }] };
 
     const offset = (+currentPage - 1) * (+pageSize);
     const defaultLimit = +pageSize ? +pageSize : 10;
 
-    const totalItems = (await this.jobModel.find(filter)).length;
+    const totalItems = await this.jobModel.countDocuments(scopedFilter);
     const totalPages = Math.ceil(totalItems / defaultLimit);
 
     let sortBy = sort;
@@ -67,7 +85,7 @@ export class JobsService {
     }
 
     const result = await this.jobModel
-      .find(filter)
+      .find(scopedFilter)
       .skip(offset)
       .limit(defaultLimit)
       .sort(sortBy as any)
@@ -85,12 +103,14 @@ export class JobsService {
     };
   }
 
-  async findOne(_id: string) {
+  async findOne(_id: string, user?: IUser) {
     if (!mongoose.Types.ObjectId.isValid(_id)) {
       throw new BadRequestException(`id ${_id} không hợp lệ`);
     }
 
-    return await this.jobModel.findOne({ _id });
+    const job = await this.jobModel.findOne({ _id, ...this.companyScope(user) });
+    if (!job) throw new NotFoundException('Không tìm thấy việc làm');
+    return job;
   }
 
   async update(
@@ -102,8 +122,9 @@ export class JobsService {
       throw new BadRequestException(`id ${_id} không hợp lệ`);
     }
 
-    return await this.jobModel.updateOne(
-      { _id },
+    this.checkCompany(updateJobDto.company, user);
+    const result = await this.jobModel.updateOne(
+      { _id, ...this.companyScope(user), isDeleted: { $ne: true } },
       {
         ...updateJobDto,
         updatedBy: {
@@ -112,6 +133,8 @@ export class JobsService {
         },
       },
     );
+    if (!result.matchedCount) throw new NotFoundException('Không tìm thấy việc làm');
+    return result;
   }
 
   async remove(_id: string, user: IUser) {
@@ -119,16 +142,19 @@ export class JobsService {
       throw new BadRequestException(`id ${_id} không hợp lệ`);
     }
 
-    await this.jobModel.updateOne(
-      { _id },
+    const result = await this.jobModel.updateOne(
+      { _id, ...this.companyScope(user), isDeleted: { $ne: true } },
       {
         deletedBy: {
           _id: user._id,
           email: user.email,
         },
+        isDeleted: true,
+        deletedAt: new Date(),
       },
     );
 
-    return await this.jobModel.softDelete({ _id });
+    if (!result.matchedCount) throw new NotFoundException('Không tìm thấy việc làm');
+    return { deleted: result.modifiedCount };
   }
 }

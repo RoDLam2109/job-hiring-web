@@ -30,6 +30,9 @@ export class User {
     @Prop()
     refreshToken: string;
 
+    @Prop()
+    phone: string;
+
     @Prop({ type: Object })
     company: {
         _id: mongoose.Schema.Types.ObjectId;

@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { getHrCompanyId } from '@/users/hr-company';
 import { CreateUserCvDto } from './dto/create-resume.dto';
 import { UpdateResumeDto } from './dto/update-resume.dto';
 import { IUser } from '@/users/users.interface';
@@ -15,6 +16,10 @@ export class ResumesService {
     @InjectModel(Resume.name)
     private resumeModel: SoftDeleteModel<ResumeDocument>,
   ) { }
+  private companyScope(user: IUser) {
+    const companyId = getHrCompanyId(user);
+    return companyId ? { companyId } : {};
+  }
   async create(createResumeDto: CreateUserCvDto, user: IUser) {
     let newResume = await this.resumeModel.create({
       ...createResumeDto,
@@ -40,14 +45,15 @@ export class ResumesService {
     return { _id, createdAt }
   }
 
-  async findAll(currentPage: number, pageSize: number, qs: string) {
+  async findAll(currentPage: number, pageSize: number, qs: string, user: IUser) {
     const { filter, sort, population, projection } = aqp(qs);
     delete filter.current;
     delete filter.pageSize;
+    const scopedFilter = { $and: [filter, this.companyScope(user), { isDeleted: { $ne: true } }] };
     let offset = (+currentPage - 1) * (+pageSize);
     let defaultLimit = +pageSize ? +pageSize : 10;
 
-    const totalItems = (await this.resumeModel.find(filter)).length;
+    const totalItems = await this.resumeModel.countDocuments(scopedFilter);
     const totalPages = Math.ceil(totalItems / defaultLimit);
     let sortBy = sort
     if (isEmpty(sort)) {
@@ -55,7 +61,7 @@ export class ResumesService {
       sortBy = "-updatedAt"
     }
 
-    const result = await this.resumeModel.find(filter)
+    const result = await this.resumeModel.find(scopedFilter)
       .skip(offset)
       .limit(defaultLimit)
       // ignore a line below @ts-ignore: Unreachable code error
@@ -74,11 +80,13 @@ export class ResumesService {
     }
   }
 
-  async findOne(_id: string) {
+  async findOne(_id: string, user: IUser) {
     if (!mongoose.Types.ObjectId.isValid(_id)) {
       throw new BadRequestException(`id ${_id} không hợp lệ`)
     }
-    return await this.resumeModel.findOne({ _id });
+    const resume = await this.resumeModel.findOne({ _id, ...this.companyScope(user) });
+    if (!resume) throw new NotFoundException('Không tìm thấy CV');
+    return resume;
   }
 
   async update(_id: string, updateResumeDto: UpdateResumeDto, user: IUser) {
@@ -86,7 +94,7 @@ export class ResumesService {
       throw new BadRequestException(`id ${_id} không hợp lệ`)
     }
     let updateResume = await this.resumeModel.updateOne(
-      { _id },
+      { _id, ...this.companyScope(user), isDeleted: { $ne: true } },
       {
         status: updateResumeDto.status,
         updatedBy: {
@@ -105,6 +113,7 @@ export class ResumesService {
         }
       }
     )
+    if (!updateResume.matchedCount) throw new NotFoundException('Không tìm thấy CV');
     return updateResume;
   }
 
@@ -112,16 +121,19 @@ export class ResumesService {
     if (!mongoose.Types.ObjectId.isValid(_id)) {
       throw new BadRequestException(`id ${_id} không hợp lệ`)
     }
-    await this.resumeModel.updateOne(
-      { _id },
+    const result = await this.resumeModel.updateOne(
+      { _id, ...this.companyScope(user), isDeleted: { $ne: true } },
       {
         deletedBy: {
           _id: user._id,
           email: user.email
-        }
+        },
+        isDeleted: true,
+        deletedAt: new Date(),
       }
     )
-    return await this.resumeModel.softDelete({ _id });
+    if (!result.matchedCount) throw new NotFoundException('Không tìm thấy CV');
+    return { deleted: result.modifiedCount };
   }
 
   async removeOwn(_id: string, user: IUser) {

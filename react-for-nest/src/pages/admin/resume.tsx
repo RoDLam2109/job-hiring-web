@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { IResume } from "@/types/backend";
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { ActionType, ProColumns, ProFormSelect } from '@ant-design/pro-components';
-import { Button, Popconfirm, Select, Space, Tag, message, notification } from "antd";
+import { Alert, Button, Popconfirm, Select, Space, Tag, message, notification } from "antd";
 import { useState, useRef } from 'react';
 import dayjs from 'dayjs';
 import { callDeleteResume } from "@/config/api";
@@ -16,6 +16,7 @@ const ResumePage = () => {
     const tableRef = useRef<ActionType>();
 
     const isFetching = useAppSelector(state => state.resume.isFetching);
+    const error = useAppSelector(state => state.resume.error);
     const meta = useAppSelector(state => state.resume.meta);
     const resumes = useAppSelector(state => state.resume.result);
     const dispatch = useAppDispatch();
@@ -190,6 +191,8 @@ const ResumePage = () => {
 
     return (
         <div>
+            {error && <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }}
+                action={<Button onClick={reloadTable} disabled={isFetching}>Thử lại</Button>} />}
             <DataTable<IResume>
                 actionRef={tableRef}
                 headerTitle="Danh sách Resumes"
@@ -199,7 +202,12 @@ const ResumePage = () => {
                 dataSource={resumes}
                 request={async (params, sort, filter): Promise<any> => {
                     const query = buildQuery(params, sort, filter);
-                    dispatch(fetchResume({ query }))
+                    try {
+                        const response = await dispatch(fetchResume({ query })).unwrap();
+                        return { data: response.data?.result ?? [], total: response.data?.meta.total ?? 0, success: true };
+                    } catch {
+                        return { data: [], total: 0, success: false };
+                    }
                 }}
                 scroll={{ x: true }}
                 pagination={

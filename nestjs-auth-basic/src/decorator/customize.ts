@@ -15,3 +15,6 @@ export const User = createParamDecorator(
     return request.user;
   },
 );
+
+export const IS_PUBLIC_PERMISSION = SKIP_PERMISSION_KEY;
+export const SkipCheckPermission = SkipPermission;

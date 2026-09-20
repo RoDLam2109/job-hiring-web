@@ -15,11 +15,21 @@ export interface IModelPaginate<T> {
     result: T[]
 }
 
+export interface IAccountPermission {
+    _id?: string;
+    name?: string;
+    module?: string;
+    method: string;
+    apiPath: string;
+}
+
 export interface IAccount {
     access_token: string;
     user: {
+        company?: { _id: string; name?: string } | null;
         _id: string;
         role: string | { _id: string; name: string } | null;
+        permissions?: IAccountPermission[];
         email: string;
         name: string
     }

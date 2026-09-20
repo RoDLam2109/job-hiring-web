@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Alert, Button, Descriptions, Form, Input, Modal, Popconfirm, Space, Table, Tabs, Tag, message } from 'antd';
+import { Alert, Button, Descriptions, Modal, Popconfirm, Space, Table, Tabs, Tag, message } from 'antd';
 import dayjs from 'dayjs';
 import { useAppSelector } from '@/redux/hooks';
 import axios from '@/config/axios-customize';
 import { IBackendRes, IResume } from '@/types/backend';
+import EmailSubscription from './email-subscription';
+import AccountSettings from './account-settings';
 
 export default function AccountModal({ open, onClose }: { open: boolean; onClose: () => void }) {
     const user = useAppSelector(state => state.account.user);
@@ -55,6 +57,7 @@ export default function AccountModal({ open, onClose }: { open: boolean; onClose
     return <>
         <Modal title="Quản lý tài khoản" open={open} onCancel={() => { setDetail(undefined); onClose(); }} footer={null} width={1100} destroyOnClose>
             <Tabs activeKey={tab} onChange={setTab} items={[
+                { key: 'email-subscription', label: 'Nhận job qua email', children: open ? <EmailSubscription key={user._id} email={user.email} /> : null },
                 { key: 'resumes', label: 'Rải CV', children: <div style={{ minHeight: 360 }}>
                     {error && <Alert type="error" showIcon message={error} action={<Button onClick={() => setRevision(value => value + 1)}>Thử lại</Button>} style={{ marginBottom: 16 }} />}
                     <Table<IResume> rowKey="_id" dataSource={rows} loading={loading} scroll={{ x: 800 }} pagination={{ pageSize: 5, hideOnSinglePage: true }} locale={{ emptyText: 'Bạn chưa ứng tuyển công việc nào' }} columns={[
@@ -71,20 +74,8 @@ export default function AccountModal({ open, onClose }: { open: boolean; onClose
                         </Space> },
                     ]} />
                 </div> },
-                { key: 'profile', label: 'Cập nhật thông tin', children: <Form layout="vertical" style={{ maxWidth: 600 }}>
-                    <Alert type="info" showIcon message="Chức năng lưu thông tin đang được hoàn thiện." style={{ marginBottom: 20 }} />
-                    <Form.Item label="Họ và tên"><Input defaultValue={user.name} /></Form.Item>
-                    <Form.Item label="Email"><Input value={user.email} disabled /></Form.Item>
-                    <Form.Item label="Số điện thoại"><Input defaultValue={user.phone} /></Form.Item>
-                    <Button type="primary" disabled>Lưu thông tin</Button>
-                </Form> },
-                { key: 'password', label: 'Thay đổi mật khẩu', children: <Form layout="vertical" style={{ maxWidth: 600 }}>
-                    <Alert type="info" showIcon message="Chức năng đổi mật khẩu đang được hoàn thiện." style={{ marginBottom: 20 }} />
-                    <Form.Item label="Mật khẩu hiện tại"><Input.Password autoComplete="current-password" /></Form.Item>
-                    <Form.Item label="Mật khẩu mới"><Input.Password autoComplete="new-password" /></Form.Item>
-                    <Form.Item label="Xác nhận mật khẩu mới"><Input.Password autoComplete="new-password" /></Form.Item>
-                    <Button type="primary" disabled>Đổi mật khẩu</Button>
-                </Form> },
+                { key: 'profile', label: 'Cập nhật thông tin', children: open ? <AccountSettings key={user._id} /> : null },
+                { key: 'password', label: 'Thay đổi mật khẩu', children: open ? <AccountSettings key={user._id} password /> : null },
             ]} />
         </Modal>
         <Modal title="Chi tiết ứng tuyển" open={open && !!detail} onCancel={() => setDetail(undefined)} footer={null}>

@@ -10,7 +10,7 @@ import { isEmpty } from 'class-validator';
 import aqp from 'api-query-params';
 
 @Injectable()
-export class SubcribersService {
+export class SubscribersService {
   constructor(
     @InjectModel(Subcriber.name)
     private subcriberModel: SoftDeleteModel<SubcriberDocument>,
@@ -73,20 +73,29 @@ export class SubcribersService {
     return await this.subcriberModel.findOne({ _id: id })
   }
 
-  async update(id: string, updatesubcriberDto: UpdateSubcriberDto, user: IUser) {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new BadRequestException(`id ${id} không hợp lệ`)
-    }
-    return await this.subcriberModel.updateOne(
-      { _id: id },
+  async update(updatesubcriberDto: UpdateSubcriberDto, user: IUser) {
+    const updated = await this.subcriberModel.updateOne(
+      { email: user.email },
       {
-        ...updatesubcriberDto,
+        ...(updatesubcriberDto.skills !== undefined && { skills: updatesubcriberDto.skills }),
+        email: user.email,
+        name: user.name,
+        $setOnInsert: {
+          createdBy: { _id: user._id, email: user.email },
+        },
         updatedBy: {
           _id: user._id,
           email: user.email
         }
-      }
-    );
+      },
+      { upsert: true, runValidators: true }
+    )
+    return updated
+  }
+
+  async getSkills(user: IUser) {
+    const { email } = user
+    return await this.subcriberModel.findOne({ email }, { skills: 1 })
   }
 
   async remove(_id: string, user: IUser) {

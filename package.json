@@ -1,9 +1,12 @@
 {
   "dependencies": {
     "@nestjs/mapped-types": "*",
+    "@nestjs/schedule": "3.0.1",
     "cookie-parser": "^1.4.7"
   },
   "devDependencies": {
-    "@types/cookie-parser": "^1.4.10"
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cron": "^2.4.3",
+    "@types/nodemailer": "^8.0.2"
   }
 }

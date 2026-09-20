@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AccountModal from '@/components/client/account-modal';
+import { canAccessAdminPage } from '@/config/permission';
 import {
     AppstoreOutlined,
     ExceptionOutlined,
@@ -89,7 +90,7 @@ const LayoutAdmin = () => {
             icon: <ExceptionOutlined />
         },
 
-    ];
+    ].filter(item => canAccessAdminPage(user, item.key));
 
     if (isMobile) {
         items.push({

@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "ESNext",
+    "types": ["vite/client", "node", "react", "react-dom"],
     "useDefineForClassFields": true,
     "lib": [
       "DOM",

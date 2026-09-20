@@ -1,6 +1,7 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { UsersService } from '@/users/users.service';
 import { ConfigService } from '@nestjs/config';
 import { IUser } from '@/users/users.interface';
 import { RolesService } from '@/roles/roles.service';
@@ -9,7 +10,8 @@ import { RolesService } from '@/roles/roles.service';
 export class JwtStrategy extends PassportStrategy(Strategy) {
     constructor(
         private configService: ConfigService,
-        private rolesService: RolesService
+        private rolesService: RolesService,
+        private usersService: UsersService,
     ) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -19,7 +21,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     async validate(payload: IUser) {
-        const { _id, name, email, role } = payload;
+        const account = await this.usersService.findOne(payload._id);
+        if (!account) throw new UnauthorizedException();
+        const { _id, name, email, role, company, phone } = account;
         const userRole = role as unknown as { _id: string; name: string } | null;
         const temp = userRole?._id
             ? await this.rolesService.findOne(userRole._id)
@@ -30,7 +34,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             _id,
             name,
             email,
-            role
+            role: userRole,
+            company,
+            phone,
         };
     }
 }

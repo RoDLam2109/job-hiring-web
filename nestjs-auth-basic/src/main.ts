@@ -21,7 +21,9 @@ async function bootstrap() {
   app.useGlobalGuards(new JwtAuthGuard(reflector));
   app.useGlobalInterceptors(new TransformInterceptor(reflector));
 
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+  }));
   const configService = app.get(ConfigService);
   const port = configService.get<string>('PORT');
 
@@ -53,7 +55,7 @@ async function bootstrap() {
     "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
     "preflightContinue": false,
     "optionsSuccessStatus": 204.,
-    credentials : true
+    credentials: true
   }
   );
 

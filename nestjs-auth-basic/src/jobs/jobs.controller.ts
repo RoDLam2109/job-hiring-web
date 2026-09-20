@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import { OptionalJwtAuthGuard } from '@/auth/optional-jwt-auth.guard';
 import { JobsService } from './jobs.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
@@ -16,19 +17,22 @@ export class JobsController {
   }
 
   @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @Get()
   @ResponseMessage('Fetch job with pagination')
   findAll(@Query('current') currentPage: string,
     @Query('pageSize') limitPage: string,
     @Query() qs: string,
+    @User() user?: IUser,
   ) {
-    return this.jobsService.findAll(+currentPage, +limitPage, qs)
+    return this.jobsService.findAll(+currentPage, +limitPage, qs, user)
   }
 
   @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.jobsService.findOne(id);
+  findOne(@Param('id') id: string, @User() user?: IUser) {
+    return this.jobsService.findOne(id, user);
   }
 
   @Patch(':id')

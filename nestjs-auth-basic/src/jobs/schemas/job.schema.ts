@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { HydratedDocument } from 'mongoose';
 
 export type JobDocument = HydratedDocument<Job>;
-
+@Schema()
 export class Job {
     @Prop()
     name: string;
@@ -10,11 +10,11 @@ export class Job {
     @Prop({ required: true })
     skills: string[];
 
-    @Prop({ type: Object })
+    @Prop({ type: Object, required: true })
     company: {
         _id: mongoose.Schema.Types.ObjectId;
         name: string;
-        logo:string;
+        logo: string;
     }
 
     @Prop()
@@ -52,7 +52,7 @@ export class Job {
         _id: mongoose.Schema.Types.ObjectId;
         email: string;
     }
-    
+
     @Prop({ type: Object })
     deletedBy: {
         _id: mongoose.Schema.Types.ObjectId;

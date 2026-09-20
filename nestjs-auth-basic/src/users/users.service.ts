@@ -13,6 +13,7 @@ import { isEmpty } from 'class-validator';
 import aqp from 'api-query-params';
 import { Role, RoleDocument } from '@/roles/schemas/role.schema';
 import { USER_ROLE } from '../databases/sample';
+import { UpdatePhoneDto, ChangePasswordDto } from './dto/account-settings.dto';
 
 @Injectable()
 export class UsersService {
@@ -24,6 +25,35 @@ export class UsersService {
     @InjectModel(Role.name)
     private roleModel: SoftDeleteModel<RoleDocument>,
   ) { }
+
+  async updatePhone(dto: UpdatePhoneDto, user: IUser) {
+    const profile = { phone: dto.phone, ...(dto.name !== undefined ? { name: dto.name.trim() } : {}) };
+    const result = await this.userModel.updateOne(
+      { _id: user._id, isDeleted: { $ne: true } },
+      { $set: profile },
+    );
+    if (!result.matchedCount) throw new BadRequestException('Không tìm thấy tài khoản');
+    return profile;
+  }
+
+  async changePassword(dto: ChangePasswordDto, user: IUser) {
+    const account = await this.userModel.findOne({ _id: user._id });
+    if (!account || !this.isValidPassword(dto.currentPassword, account.password)) {
+      throw new BadRequestException('Mật khẩu hiện tại không đúng');
+    }
+    if (Buffer.byteLength(dto.newPassword, 'utf8') > 72) {
+      throw new BadRequestException('Mật khẩu mới không được vượt quá 72 byte');
+    }
+    if (this.isValidPassword(dto.newPassword, account.password)) {
+      throw new BadRequestException('Mật khẩu mới phải khác mật khẩu hiện tại');
+    }
+    const result = await this.userModel.updateOne(
+      { _id: user._id, password: account.password, isDeleted: { $ne: true } },
+      { $set: { password: this.getHashPassword(dto.newPassword), refreshToken: null } },
+    );
+    if (!result.matchedCount) throw new BadRequestException('Mật khẩu đã thay đổi, vui lòng thử lại');
+    return { changed: true };
+  }
 
   async findAll(currentPage: number, limitPage: number, qs: string) {
     const { filter, sort, population } = aqp(qs);
