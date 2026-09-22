@@ -50,8 +50,8 @@ export class UsersController {
 
   @Patch(':id')
   @ResponseMessage('Update a new user')
-  update(@Body() updateUserDto: UpdateUserDto, @User() user: IUser): Promise<unknown> {
-    return this.usersService.update(updateUserDto, user);
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @User() user: IUser): Promise<unknown> {
+    return this.usersService.update({ ...updateUserDto, _id: id }, user);
   }
 
   @Delete(':id')

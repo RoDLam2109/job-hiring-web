@@ -1,19 +1,22 @@
 import DataTable from "@/components/client/data-table";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { IResume } from "@/types/backend";
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import { DeleteOutlined } from "@ant-design/icons";
 import { ActionType, ProColumns, ProFormSelect } from '@ant-design/pro-components';
-import { Alert, Button, Popconfirm, Select, Space, Tag, message, notification } from "antd";
+import { Alert, Button, Popconfirm, message, notification } from "antd";
 import { useState, useRef } from 'react';
 import dayjs from 'dayjs';
 import { callDeleteResume } from "@/config/api";
 import queryString from 'query-string';
-import { useNavigate } from "react-router-dom";
+import { hasPermission } from "@/config/permission";
 import { fetchResume } from "@/redux/slice/resumeSlide";
 import ViewDetailResume from "@/components/admin/resume/view.resume";
 
 const ResumePage = () => {
     const tableRef = useRef<ActionType>();
+    const user = useAppSelector(state => state.account.user);
+    const canDelete = hasPermission(user, 'DELETE', '/api/v1/resumes/:id');
+    const [deletingId, setDeletingId] = useState<string>();
 
     const isFetching = useAppSelector(state => state.resume.isFetching);
     const error = useAppSelector(state => state.resume.error);
@@ -25,7 +28,9 @@ const ResumePage = () => {
     const [openViewDetail, setOpenViewDetail] = useState<boolean>(false);
 
     const handleDeleteResume = async (_id: string | undefined) => {
-        if (_id) {
+        if (!_id || deletingId || !canDelete) return;
+        setDeletingId(_id);
+        try {
             const res = await callDeleteResume(_id);
             if (res && res.data) {
                 message.success('Xóa Resume thành công');
@@ -33,9 +38,16 @@ const ResumePage = () => {
             } else {
                 notification.error({
                     message: 'Có lỗi xảy ra',
-                    description: res.message
+                    description: res?.message || 'Không thể xóa resume. Vui lòng thử lại.'
                 });
             }
+        } catch {
+            notification.error({
+                message: 'Có lỗi xảy ra',
+                description: 'Không thể xóa resume. Vui lòng thử lại.',
+            });
+        } finally {
+            setDeletingId(undefined);
         }
     }
 
@@ -115,45 +127,36 @@ const ResumePage = () => {
             },
             hideInSearch: true,
         },
-        // {
-
-        //     title: 'Actions',
-        //     hideInSearch: true,
-        //     width: 50,
-        //     render: (_value, entity, _index, _action) => (
-        //         <Space>
-        //             <EditOutlined
-        //                 style={{
-        //                     fontSize: 20,
-        //                     color: '#ffa500',
-        //                 }}
-        //                 type=""
-        //                 onClick={() => {
-        //                     navigate(`/admin/job/upsert?id=${entity._id}`)
-        //                 }}
-        //             />
-
-        //             <Popconfirm
-        //                 placement="leftTop"
-        //                 title={"Xác nhận xóa resume"}
-        //                 description={"Bạn có chắc chắn muốn xóa resume này ?"}
-        //                 onConfirm={() => handleDeleteResume(entity._id)}
-        //                 okText="Xác nhận"
-        //                 cancelText="Hủy"
-        //             >
-        //                 <span style={{ cursor: "pointer", margin: "0 10px" }}>
-        //                     <DeleteOutlined
-        //                         style={{
-        //                             fontSize: 20,
-        //                             color: '#ff4d4f',
-        //                         }}
-        //                     />
-        //                 </span>
-        //             </Popconfirm>
-        //         </Space>
-        //     ),
-
-        // },
+        {
+            title: 'Thao tác',
+            key: 'actions',
+            hideInSearch: true,
+            hideInTable: !canDelete,
+            width: 110,
+            fixed: 'right',
+            render: (_value, entity) => (
+                <Popconfirm
+                    placement="leftTop"
+                    title="Xác nhận xóa resume"
+                    description="Bạn có chắc chắn muốn xóa resume này?"
+                    onConfirm={() => handleDeleteResume(entity._id)}
+                    disabled={!!deletingId || !entity._id}
+                    okText="Xóa"
+                    cancelText="Hủy"
+                    okButtonProps={{ danger: true }}
+                >
+                    <Button
+                        danger
+                        type="link"
+                        icon={<DeleteOutlined />}
+                        loading={!!entity._id && deletingId === entity._id}
+                        disabled={!!deletingId || !entity._id}
+                    >
+                        Xóa
+                    </Button>
+                </Popconfirm>
+            ),
+        },
     ];
 
     const buildQuery = (params: any, sort: any, filter: any) => {

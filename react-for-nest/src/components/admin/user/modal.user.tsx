@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { callCreateUser, callFetchCompany, callUpdateUser } from "@/config/api";
 import { IUser } from "@/types/backend";
 import { DebounceSelect } from "./debouce.select";
+import { fetchAccess } from "@/config/access-api";
 
 interface IProps {
     openModal: boolean;
@@ -44,7 +45,6 @@ const ModalUser = (props: IProps) => {
                 _id: dataInit._id,
                 name,
                 email,
-                password,
                 age,
                 gender,
                 address,
@@ -136,7 +136,13 @@ const ModalUser = (props: IProps) => {
                 preserve={false}
                 form={form}
                 onFinish={submitUser}
-                initialValues={dataInit?._id ? dataInit : {}}
+                initialValues={dataInit?._id ? {
+                    ...dataInit,
+                    company: dataInit.company ? {
+                        value: dataInit.company._id,
+                        label: dataInit.company.name,
+                    } : undefined,
+                } : {}}
             >
                 <Row gutter={16}>
                     <Col lg={12} md={12} sm={24} xs={24}>
@@ -192,10 +198,9 @@ const ModalUser = (props: IProps) => {
                         <ProFormSelect
                             name="role"
                             label="Vai trò"
-                            valueEnum={{
-                                ADMIN: 'ADMIN',
-                                HR: 'HR',
-                                USER: 'USER',
+                            request={async () => {
+                                const data = await fetchAccess('roles', 'current=1&pageSize=100');
+                                return data.result.map(role => ({ label: role.name, value: role._id }));
                             }}
                             placeholder="Please select a role"
                             rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}

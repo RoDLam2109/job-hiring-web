@@ -79,7 +79,7 @@ export const callCreateUser = (user: IUser) => {
 }
 
 export const callUpdateUser = (user: IUser) => {
-    return axios.patch<IBackendRes<IUser>>(`/api/v1/users`, { ...user })
+    return axios.patch<IBackendRes<IUser>>(`/api/v1/users/${user._id}`, { ...user })
 }
 
 export const callDeleteUser = (id: string) => {
