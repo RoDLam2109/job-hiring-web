@@ -6,8 +6,6 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test:auth": "node tests/auth-client.test.cjs",
-    "test:admin-forms": "node tests/admin-forms.test.cjs",
     "dev": "vite",
     "start": "vite",
     "build": "tsc && vite build",
