@@ -12,6 +12,7 @@ import ms from 'ms';
 import { RolesService } from '../roles/roles.service';
 import { UpdateUserDto } from '@/users/dto/update-user.dto';
 import { Request as ExpressReq, Response } from 'express'
+import { refreshCookieOptions } from './refresh-cookie';
 
 @Injectable()
 export class AuthService {
@@ -64,7 +65,7 @@ export class AuthService {
         //set refresh token as cookies
         response.cookie('refresh_token', refresh_token,
             {
-                httpOnly: true,
+                ...refreshCookieOptions(this.configService),
                 maxAge: ms(this.configService.get<string>('JWT_REFRESH_EXPIRE'))
             })
 
@@ -129,11 +130,10 @@ export class AuthService {
                 const userRole = user.role as unknown as { _id: string; name: string };
                 const temp = await this.rolesService.findOne(userRole._id);
 
-                response.clearCookie('refresh_token');
                 //set refresh token as cookies
                 response.cookie('refresh_token', refresh_token,
                     {
-                        httpOnly: true,
+                        ...refreshCookieOptions(this.configService),
                         maxAge: ms(this.configService.get<string>('JWT_REFRESH_EXPIRE'))
                     })
 
@@ -156,13 +156,17 @@ export class AuthService {
 
         }
         catch (error) {
+            const invalidToken = error instanceof BadRequestException
+                || ['JsonWebTokenError', 'TokenExpiredError', 'NotBeforeError'].includes(error?.name);
+            if (!invalidToken) throw error;
+            response.clearCookie('refresh_token', refreshCookieOptions(this.configService));
             throw new BadRequestException(`Refresh token không hợp lệ. Vui lòng login!`)
         }
     }
 
     logoutUser = async (response: Response, user: IUser) => {
         await this.usersService.updateUserToken(user._id, '')
-        response.clearCookie('refresh_token')
+        response.clearCookie('refresh_token', refreshCookieOptions(this.configService))
         return 'ok'
     }
 }

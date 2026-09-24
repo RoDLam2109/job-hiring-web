@@ -1,5 +1,4 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import axios from '@/config/axios-customize';
 import { callFetchAccount } from '@/config/api';
 import type { IAccount } from '@/types/backend';
 
@@ -7,6 +6,7 @@ import type { IAccount } from '@/types/backend';
 export const fetchAccount = createAsyncThunk(
     'account/fetchAccount',
     async () => {
+        if (!localStorage.getItem('access_token')) return null;
         const response = await callFetchAccount();
         if (!response?.data?.user) {
             throw new Error('Không thể lấy thông tin tài khoản');
@@ -45,6 +45,8 @@ export const accountSlide = createSlice({
         setUserLoginInfo: (state, action) => {
             state.isAuthenticated = true;
             state.isLoading = false;
+            state.isRefreshToken = false;
+            state.errorRefreshToken = '';
             state.user = {
                 ...state.user,
                 permissions: [],
@@ -54,6 +56,9 @@ export const accountSlide = createSlice({
         setLogoutAction: (state, action) => {
             localStorage.removeItem('access_token');
             state.isAuthenticated = false;
+            state.isLoading = false;
+            state.isRefreshToken = false;
+            state.errorRefreshToken = '';
             state.user = {
                 email: "",
                 phone: "",
@@ -77,16 +82,21 @@ export const accountSlide = createSlice({
         })
 
         builder.addCase(fetchAccount.fulfilled, (state, action) => {
+            state.isLoading = false;
             if (action.payload) {
                 state.isAuthenticated = true;
                 state.isLoading = false;
                 state.user = { ...state.user, permissions: [], ...action?.payload?.user }
+            } else {
+                state.isAuthenticated = false;
+                state.user = initialState.user;
             }
         })
 
         builder.addCase(fetchAccount.rejected, (state, action) => {
             state.isAuthenticated = false;
             state.isLoading = false;
+            state.user = initialState.user;
         })
 
     },

@@ -48,6 +48,14 @@ const ModalCompany = (props: IProps) => {
     const uploadPending = useRef(false);
 
     useEffect(() => {
+        if (openModal) {
+            // initialValues is only read on mount; explicitly hydrate each edit.
+            form.setFieldsValue({
+                name: dataInit?.name ?? '',
+                address: dataInit?.address ?? '',
+                logo: dataInit?.logo ?? '',
+            });
+        }
         uploadVersion.current += 1;
         uploadPending.current = false;
         setLoadingUpload(false);
@@ -56,7 +64,7 @@ const ModalCompany = (props: IProps) => {
             ? [{ name: dataInit.logo, uid: uuidv4() }] : []);
         setPreviewOpen(false);
         return () => { uploadVersion.current += 1; };
-    }, [openModal, dataInit])
+    }, [openModal, dataInit, form])
 
     const submitCompany = async (valuesForm: ICompanyForm) => {
         const { name, address } = valuesForm;
@@ -103,18 +111,13 @@ const ModalCompany = (props: IProps) => {
         uploadVersion.current += 1;
         uploadPending.current = false;
         setLoadingUpload(false);
-        setDataLogo([]);
         setPreviewOpen(false);
-        setPreviewImage('');
-        form.resetFields();
-        setValue("");
-        setDataInit(null);
 
         //add animation when closing modal
         setAnimation('close')
         await new Promise(r => setTimeout(r, 400))
         setOpenModal(false);
-        setAnimation('open')
+        setDataInit(null);
     }
 
     const handleRemoveFile = (file: any) => {
@@ -202,6 +205,7 @@ const ModalCompany = (props: IProps) => {
                         modalProps={{
                             onCancel: () => { handleReset() },
                             destroyOnClose: true,
+                            forceRender: true,
                             width: isMobile ? "100%" : 900,
                             footer: null,
                             keyboard: false,
@@ -216,6 +220,9 @@ const ModalCompany = (props: IProps) => {
                         initialValues={dataInit?._id ? dataInit : {}}
                         submitter={{
                             render: (_: any, dom: any) => <FooterToolbar>{dom}</FooterToolbar>,
+                            resetButtonProps: {
+                                onClick: () => { void handleReset(); }
+                            },
                             submitButtonProps: {
                                 disabled: loadingUpload,
                                 icon: <CheckSquareOutlined />

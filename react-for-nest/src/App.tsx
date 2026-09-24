@@ -62,11 +62,6 @@ export default function App() {
 
 
   useEffect(() => {
-    if (
-      window.location.pathname === '/login'
-      || window.location.pathname === '/register'
-    )
-      return;
     dispatch(fetchAccount())
   }, [])
 

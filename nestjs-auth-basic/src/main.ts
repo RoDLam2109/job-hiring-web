@@ -54,7 +54,10 @@ async function bootstrap() {
   app.use(passport.session())
   //Config Cors
   app.enableCors({
-    "origin": true,
+    // Cross-site refresh cookies must only be readable by our frontend origins.
+    "origin": (configService.get<string>('FRONTEND_URLS')
+      || 'https://job-hiring-web.vercel.app,http://localhost:3000,http://localhost:5173')
+      .split(',').map(origin => origin.trim()).filter(Boolean),
     "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
     "preflightContinue": false,
     "optionsSuccessStatus": 204.,

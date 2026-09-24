@@ -117,8 +117,8 @@ const CompanyPage = () => {
                         }}
                         type=""
                         onClick={() => {
-                            setOpenModal(true);
                             setDataInit(entity);
+                            setOpenModal(true);
                         }}
                     />
 
@@ -205,20 +205,24 @@ const CompanyPage = () => {
                         <Button
                             icon={<PlusOutlined />}
                             type="primary"
-                            onClick={() => setOpenModal(true)}
+                            onClick={() => {
+                                setDataInit(null);
+                                setOpenModal(true);
+                            }}
                         >
                             Thêm mới
                         </Button>
                     );
                 }}
             />
-            <ModalCompany
+            {openModal && <ModalCompany
+                key={dataInit?._id ?? 'new-company'}
                 openModal={openModal}
                 setOpenModal={setOpenModal}
                 reloadTable={reloadTable}
                 dataInit={dataInit}
                 setDataInit={setDataInit}
-            />
+            />}
         </div>
     )
 }
