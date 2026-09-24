@@ -1,3 +1,4 @@
+import { getCompanyLogoUrl } from "@/utils/company-logo";
 import { callFetchCompany } from '@/config/api';
 import { convertSlug } from '@/config/utils';
 import { ICompany } from '@/types/backend';
@@ -108,7 +109,7 @@ const CompanyCard = (props: IProps) => {
                                                 <img
                                                     className={styles["company-logo"]}
                                                     alt={`Logo ${item.name}`}
-                                                    src={`${import.meta.env.VITE_BACKEND_URL}/images/company/${item?.logo}`}
+                                                    src={getCompanyLogoUrl(item?.logo)}
                                                     onError={(event) => {
                                                         event.currentTarget.style.visibility = 'hidden';
                                                     }}

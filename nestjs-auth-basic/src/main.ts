@@ -11,6 +11,7 @@ import ms from 'ms';
 import passport from "passport"
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { TransformInterceptor } from './core/transform.interceptor';
+import { getUploadDirectory, PUBLIC_DIRECTORY } from './files/upload-path';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(
@@ -28,7 +29,9 @@ async function bootstrap() {
   const port = configService.get<string>('PORT');
 
   //config view engine
-  app.useStaticAssets(join(__dirname, '..', 'src/public'));
+  // Uploaded files take priority; bundled images remain available as a fallback.
+  app.useStaticAssets(getUploadDirectory(), { prefix: '/images/' });
+  app.useStaticAssets(PUBLIC_DIRECTORY);
   app.setBaseViewsDir(join(__dirname, '..', 'src/views'));
   app.setViewEngine('ejs');
 

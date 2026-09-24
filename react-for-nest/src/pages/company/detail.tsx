@@ -1,3 +1,4 @@
+import { getCompanyLogoUrl } from "@/utils/company-logo";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from 'react';
 import { ICompany } from "@/types/backend";
@@ -58,7 +59,7 @@ const ClientCompanyDetailPage = (props: any) => {
                                     <div>
                                         <img
                                             alt={companyDetail.name}
-                                            src={`${import.meta.env.VITE_BACKEND_URL}/images/company/${companyDetail?.logo}`}
+                                            src={getCompanyLogoUrl(companyDetail?.logo)}
                                         />
                                     </div>
                                     <div>

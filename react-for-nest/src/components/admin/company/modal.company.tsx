@@ -1,3 +1,4 @@
+import { getCompanyLogoUrl } from "@/utils/company-logo";
 import { CheckSquareOutlined, LoadingOutlined, PlusOutlined } from "@ant-design/icons";
 import { FooterToolbar, ModalForm, ProCard, ProFormText, ProFormTextArea } from "@ant-design/pro-components";
 import { Col, ConfigProvider, Form, Modal, Row, Upload, message, notification } from "antd";
@@ -269,7 +270,7 @@ const ModalCompany = (props: IProps) => {
                                                             uid: uuidv4(),
                                                             name: dataInit?.logo ?? "",
                                                             status: 'done',
-                                                            url: `${import.meta.env.VITE_BACKEND_URL}/images/company/${dataInit?.logo}`,
+                                                            url: getCompanyLogoUrl(dataInit?.logo),
                                                         }
                                                     ] : []
                                             }

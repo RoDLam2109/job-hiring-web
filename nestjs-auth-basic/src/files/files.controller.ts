@@ -3,17 +3,21 @@ import { FilesService } from './files.service';
 import { CreateFileDto } from './dto/create-file.dto';
 import { UpdateFileDto } from './dto/update-file.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Public, ResponseMessage } from '@/decorator/customize';
+import { SkipPermission, ResponseMessage } from '@/decorator/customize';
+import { CloudinaryService } from './cloudinary.service';
 
 @Controller('files')
 export class FilesController {
-  constructor(private readonly filesService: FilesService) { }
+  constructor(
+    private readonly filesService: FilesService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) { }
 
-  @Public()
+  @SkipPermission()
   @Post('upload')
   @ResponseMessage('Upload single file')
   @UseInterceptors(FileInterceptor('fileUpload'))
-  uploadFile(@UploadedFile(
+  async uploadFile(@UploadedFile(
     new ParseFilePipeBuilder()
       .addFileTypeValidator({
         // fileType: /\.(jpg|jpeg|png||txt)$/,
@@ -25,6 +29,9 @@ export class FilesController {
         const maxSizeMB = folderType === 'company' ? 2 : 1;
         if (file.size >= maxSizeMB * 1024 * 1024) {
           throw new UnprocessableEntityException(`Dung lượng file phải nhỏ hơn ${maxSizeMB} MB`);
+        }
+        if (folderType === 'company') {
+          return { fileName: await this.cloudinaryService.uploadCompanyLogo(file.buffer) };
         }
         return {
           fileName: file.filename

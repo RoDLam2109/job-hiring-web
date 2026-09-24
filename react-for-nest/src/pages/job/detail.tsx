@@ -1,3 +1,4 @@
+import { getCompanyLogoUrl } from "@/utils/company-logo";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from 'react';
 import { IJob } from "@/types/backend";
@@ -86,7 +87,7 @@ const ClientJobDetailPage = (props: any) => {
                                     <div>
                                         <img
                                             alt={jobDetail.company?.name ?? "Company logo"}
-                                            src={`${import.meta.env.VITE_BACKEND_URL}/images/company/${jobDetail.company?.logo}`}
+                                            src={getCompanyLogoUrl(jobDetail.company?.logo)}
                                         />
                                     </div>
                                     <div>

@@ -1,3 +1,4 @@
+import { getCompanyLogoUrl } from "@/utils/company-logo";
 import { callFetchJob } from '@/config/api';
 import { LOCATION_LIST, convertSlug, getLocationName } from '@/config/utils';
 import { IJob } from '@/types/backend';
@@ -112,7 +113,7 @@ const JobCard = (props: IProps) => {
                                             <div className={styles["card-job-left"]}>
                                                 <img
                                                     alt={`Logo ${item.company?.name || 'company'}`}
-                                                    src={`${import.meta.env.VITE_BACKEND_URL}/images/company/${item?.company?.logo}`}
+                                                    src={getCompanyLogoUrl(item?.company?.logo)}
                                                     onError={(event) => {
                                                         event.currentTarget.style.visibility = 'hidden';
                                                     }}
