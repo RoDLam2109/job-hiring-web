@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { ArrayNotEmpty, IsDateString, IsEmail, IsNotEmpty, IsNotEmptyObject, IsObject, IsString, ValidateNested } from 'class-validator'
+import { ArrayNotEmpty, IsBoolean, IsDateString, IsEmail, IsNotEmpty, IsNotEmptyObject, IsObject, IsString, ValidateNested } from 'class-validator'
 import mongoose from 'mongoose'
 class Company {
     @IsNotEmpty()
@@ -40,6 +40,9 @@ export class CreateJobDto {
 
     @IsNotEmpty({ message: 'location không được để trống' })
     location: string
+
+    @IsBoolean({ message: 'Trạng thái isActive phải là true hoặc false' })
+    isActive: boolean;
 
     @IsNotEmpty({ message: 'startDate không được để trống' })
     @IsDateString({ strict: true }, { message: 'Ngày bắt đầu phải là ngày hợp lệ theo định dạng ISO 8601' })

@@ -57,6 +57,7 @@ export function buildJobPayload(values: ReturnType<typeof jobFormValues>, compan
 }
 
 export function companySearchQuery(search: string) {
+    if (!search.trim()) return 'current=1&pageSize=100';
     const escaped = search.trim().replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
     return `current=1&pageSize=100&name=${encodeURIComponent(`/${escaped}/i`)}`;
 }
