@@ -16,6 +16,7 @@ const UserPage = () => {
     const [openModal, setOpenModal] = useState<boolean>(false);
     const [dataInit, setDataInit] = useState<IUser | null>(null);
     const [openViewDetail, setOpenViewDetail] = useState<boolean>(false);
+    const [detailUser, setDetailUser] = useState<IUser | null>(null);
 
     const tableRef = useRef<ActionType>();
 
@@ -52,7 +53,7 @@ const UserPage = () => {
                 return (
                     <a href="#" onClick={() => {
                         setOpenViewDetail(true);
-                        setDataInit(record);
+                        setDetailUser(record);
                     }}>
                         {record._id}
                     </a>
@@ -109,8 +110,8 @@ const UserPage = () => {
                         }}
                         type=""
                         onClick={() => {
-                            setOpenModal(true);
                             setDataInit(entity);
+                            setOpenModal(true);
                         }}
                     />
 
@@ -197,25 +198,26 @@ const UserPage = () => {
                         <Button
                             icon={<PlusOutlined />}
                             type="primary"
-                            onClick={() => setOpenModal(true)}
+                            onClick={() => { setDataInit(null); setOpenModal(true); }}
                         >
                             Thêm mới
                         </Button>
                     );
                 }}
             />
-            <ModalUser
+            {openModal && <ModalUser
+                key={dataInit?._id ?? 'new-user'}
                 openModal={openModal}
                 setOpenModal={setOpenModal}
                 reloadTable={reloadTable}
                 dataInit={dataInit}
                 setDataInit={setDataInit}
-            />
+            />}
             <ViewDetailUser
                 onClose={setOpenViewDetail}
                 open={openViewDetail}
-                dataInit={dataInit}
-                setDataInit={setDataInit}
+                dataInit={detailUser}
+                setDataInit={setDetailUser}
             />
         </div>
     )

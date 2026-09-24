@@ -1,11 +1,12 @@
 import { ModalForm, ProForm, ProFormDigit, ProFormSelect, ProFormText } from "@ant-design/pro-components";
 import { Col, Form, Row, message, notification } from "antd";
 import { isMobile } from 'react-device-detect';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { callCreateUser, callFetchCompany, callUpdateUser } from "@/config/api";
 import { IUser } from "@/types/backend";
 import { DebounceSelect } from "./debouce.select";
-import { fetchAccess } from "@/config/access-api";
+import { fetchAccess, unwrap } from "@/config/access-api";
+import { companyOption, companySearchQuery, userFormValues } from "@/utils/admin-forms";
 
 interface IProps {
     openModal: boolean;
@@ -23,99 +24,60 @@ export interface ICompanySelect {
 
 const ModalUser = (props: IProps) => {
     const { openModal, setOpenModal, reloadTable, dataInit, setDataInit } = props;
-    const [companies, setCompanies] = useState<ICompanySelect[]>([]);
+    const [saving, setSaving] = useState(false);
+    const savingRef = useRef(false);
     const [form] = Form.useForm();
 
     useEffect(() => {
-        if (dataInit?._id) {
-            if (dataInit.company) {
-                setCompanies([{
-                    label: dataInit.company.name,
-                    value: dataInit.company._id,
-                    key: dataInit.company._id,
-                }])
-            }
-        }
-    }, [dataInit])
-    const submitUser = async (valuesForm: any) => {
-        const { name, email, password, address, age, gender, role, company } = valuesForm;
-        if (dataInit?._id) {
-            //update
-            const user = {
-                _id: dataInit._id,
-                name,
-                email,
-                age,
-                gender,
-                address,
-                role,
-                company: {
-                    _id: company.value,
-                    name: company.label
-                }
-            }
+        if (openModal) form.setFieldsValue(userFormValues(dataInit));
+    }, [openModal, dataInit, form]);
 
-            const res = await callUpdateUser(user);
-            if (res.data) {
-                message.success("Cập nhật user thành công");
-                handleReset();
-                reloadTable();
-            } else {
-                notification.error({
-                    message: 'Có lỗi xảy ra',
-                    description: res.message
-                });
-            }
-        } else {
-            //create
-            const user = {
-                name,
-                email,
-                password,
-                age,
-                gender,
-                address,
-                role,
-                company: {
-                    _id: company.value,
-                    name: company.label
-                }
-            }
-            const res = await callCreateUser(user);
-            if (res.data) {
-                message.success("Thêm mới user thành công");
-                handleReset();
-                reloadTable();
-            } else {
-                notification.error({
-                    message: 'Có lỗi xảy ra',
-                    description: res.message
-                });
-            }
-        }
-    }
-
-    const handleReset = async () => {
-        form.resetFields();
-        setDataInit(null);
-        setCompanies([])
+    const handleReset = () => {
+        if (savingRef.current) return;
         setOpenModal(false);
-    }
+        setDataInit(null);
+    };
 
-    // Usage of DebounceSelect
-    async function fetchCompanyList(name: string): Promise<ICompanySelect[]> {
-        const res = await callFetchCompany(`current=1&pageSize=100&name=/${name}/i`);
-        if (res && res.data) {
-            const list = res.data.result;
-            const temp = list.map(item => {
-                return {
-                    label: item.name as string,
-                    value: item._id as string
-                }
-            })
-            return temp;
-        } else return [];
-    }
+    const submitUser = async (values: any) => {
+        if (savingRef.current) return false;
+        if (!values.company?.value || !values.company?.label) {
+            form.setFields([{ name: 'company', errors: ['Vui lòng chọn công ty.'] }]);
+            return false;
+        }
+        savingRef.current = true;
+        setSaving(true);
+        try {
+            const user: IUser = {
+                name: values.name.trim(), email: values.email.trim(),
+                age: values.age, gender: values.gender, address: values.address.trim(),
+                role: values.role,
+                company: { _id: values.company.value, name: values.company.label },
+                ...(dataInit?._id ? { _id: dataInit._id } : { password: values.password }),
+            };
+            unwrap(await (dataInit?._id ? callUpdateUser(user) : callCreateUser(user)));
+            message.success(dataInit?._id ? 'Cập nhật user thành công' : 'Thêm mới user thành công');
+            setOpenModal(false);
+            setDataInit(null);
+            reloadTable();
+        } catch (error) {
+            notification.error({
+                message: 'Không thể lưu user',
+                description: error instanceof Error ? error.message : 'Vui lòng thử lại.',
+            });
+        } finally {
+            savingRef.current = false;
+            setSaving(false);
+        }
+        return false;
+    };
+
+    const fetchCompanyList = useCallback(async (name: string): Promise<ICompanySelect[]> => {
+        const data = unwrap(await callFetchCompany(companySearchQuery(name)));
+        return data.result.flatMap(item => {
+            const option = companyOption(item);
+            return option ? [option] : [];
+        });
+    }, []);
 
     return (
         <>
@@ -124,8 +86,9 @@ const ModalUser = (props: IProps) => {
                 open={openModal}
                 modalProps={{
                     onCancel: () => { handleReset() },
-                    afterClose: () => handleReset(),
                     destroyOnClose: true,
+                    forceRender: true,
+                    closable: !saving,
                     width: isMobile ? "100%" : 900,
                     keyboard: false,
                     maskClosable: false,
@@ -136,13 +99,12 @@ const ModalUser = (props: IProps) => {
                 preserve={false}
                 form={form}
                 onFinish={submitUser}
-                initialValues={dataInit?._id ? {
-                    ...dataInit,
-                    company: dataInit.company ? {
-                        value: dataInit.company._id,
-                        label: dataInit.company.name,
-                    } : undefined,
-                } : {}}
+                initialValues={userFormValues(dataInit)}
+                disabled={saving}
+                submitter={{
+                    submitButtonProps: { loading: saving },
+                    resetButtonProps: { disabled: saving, onClick: handleReset },
+                }}
             >
                 <Row gutter={16}>
                     <Col lg={12} md={12} sm={24} xs={24}>
@@ -199,8 +161,21 @@ const ModalUser = (props: IProps) => {
                             name="role"
                             label="Vai trò"
                             request={async () => {
-                                const data = await fetchAccess('roles', 'current=1&pageSize=100');
-                                return data.result.map(role => ({ label: role.name, value: role._id }));
+                                try {
+                                    const data = await fetchAccess('roles', 'current=1&pageSize=100');
+                                    const options = data.result.map(role => ({ label: role.name, value: role._id }));
+                                    const currentRole = dataInit?.role;
+                                    if (currentRole && typeof currentRole === 'object'
+                                        && !options.some(option => option.value === currentRole._id)) {
+                                        options.push({ label: currentRole.name, value: currentRole._id });
+                                    }
+                                    return options;
+                                } catch {
+                                    message.error('Không tải được danh sách vai trò. Vui lòng mở lại form để thử lại.');
+                                    const role = dataInit?.role;
+                                    return role ? [{ label: typeof role === 'string' ? role : role.name,
+                                        value: typeof role === 'string' ? role : role._id }] : [];
+                                }
                             }}
                             placeholder="Please select a role"
                             rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
@@ -215,15 +190,8 @@ const ModalUser = (props: IProps) => {
                             <DebounceSelect
                                 allowClear
                                 showSearch
-                                defaultValue={companies}
-                                value={companies}
                                 placeholder="Chọn công ty"
                                 fetchOptions={fetchCompanyList}
-                                onChange={(newValue: any) => {
-                                    if (newValue?.length === 0 || newValue?.length === 1) {
-                                        setCompanies(newValue as ICompanySelect[]);
-                                    }
-                                }}
                                 style={{ width: '100%' }}
                             />
                         </ProForm.Item>
