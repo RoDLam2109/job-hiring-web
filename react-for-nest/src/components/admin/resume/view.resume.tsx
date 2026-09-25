@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { useState, useEffect } from 'react';
 import { useAppSelector } from '@/redux/hooks';
 import { hasPermission } from '@/config/permission';
+import ResumeFileLink from '@/components/resume-file-link';
 const { Option } = Select;
 
 interface IProps {
@@ -68,6 +69,9 @@ const ViewDetailResume = (props: IProps) => {
                 }
             >
                 <Descriptions title="" bordered column={2} layout="vertical">
+                    <Descriptions.Item label="File CV đã upload" span={2}>
+                        <ResumeFileLink url={dataInit?.url} />
+                    </Descriptions.Item>
                     <Descriptions.Item label="Email">{dataInit?.email}</Descriptions.Item>
                     <Descriptions.Item label="Trạng thái">
                         <Form

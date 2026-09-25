@@ -6,9 +6,12 @@ import axios from '@/config/axios-customize';
 import { IBackendRes, IResume } from '@/types/backend';
 import EmailSubscription from './email-subscription';
 import AccountSettings from './account-settings';
+import ResumePage from '@/pages/admin/resume';
+import ResumeFileLink from '@/components/resume-file-link';
 
 export default function AccountModal({ open, onClose }: { open: boolean; onClose: () => void }) {
     const user = useAppSelector(state => state.account.user);
+    const isHr = (typeof user.role === 'string' ? user.role : user.role?.name) === 'HR';
     const [rows, setRows] = useState<IResume[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -35,7 +38,7 @@ export default function AccountModal({ open, onClose }: { open: boolean; onClose
         }
     };
     useEffect(() => {
-        if (!open) return;
+        if (!open || isHr) return;
         let active = true;
         setTab('resumes');
         setRows([]);
@@ -49,7 +52,7 @@ export default function AccountModal({ open, onClose }: { open: boolean; onClose
             if (active) setError(error instanceof Error ? error.message : 'Không thể kết nối máy chủ.');
         }).finally(() => { if (active) setLoading(false); });
         return () => { active = false; };
-    }, [open, user._id, revision]);
+    }, [open, user._id, revision, isHr]);
 
     const companyName = (row: IResume) => typeof row.companyId === 'object' ? row.companyId?.name ?? '—' : '—';
     const jobName = (row: IResume) => typeof row.jobId === 'object' ? row.jobId?.name ?? '—' : '—';
@@ -58,7 +61,7 @@ export default function AccountModal({ open, onClose }: { open: boolean; onClose
         <Modal title="Quản lý tài khoản" open={open} onCancel={() => { setDetail(undefined); onClose(); }} footer={null} width={1100} destroyOnClose>
             <Tabs activeKey={tab} onChange={setTab} items={[
                 { key: 'email-subscription', label: 'Nhận job qua email', children: open ? <EmailSubscription key={user._id} email={user.email} /> : null },
-                { key: 'resumes', label: 'Rải CV', children: <div style={{ minHeight: 360 }}>
+                { key: 'resumes', label: isHr ? 'CV của công ty' : 'Rải CV', children: isHr ? (open ? <ResumePage key={user._id} /> : null) : <div style={{ minHeight: 360 }}>
                     {error && <Alert type="error" showIcon message={error} action={<Button onClick={() => setRevision(value => value + 1)}>Thử lại</Button>} style={{ marginBottom: 16 }} />}
                     <Table<IResume> rowKey="_id" dataSource={rows} loading={loading} scroll={{ x: 800 }} pagination={{ pageSize: 5, hideOnSinglePage: true }} locale={{ emptyText: 'Bạn chưa ứng tuyển công việc nào' }} columns={[
                         { title: 'STT', width: 65, render: (_, row) => rows.indexOf(row) + 1 },
@@ -84,7 +87,7 @@ export default function AccountModal({ open, onClose }: { open: boolean; onClose
                 { key: 'job', label: 'Vị trí', children: jobName(detail) },
                 { key: 'status', label: 'Trạng thái', children: detail.status },
                 { key: 'email', label: 'Email', children: detail.email },
-                { key: 'cv', label: 'CV', children: detail.url },
+                { key: 'cv', label: 'CV', children: <ResumeFileLink url={detail.url} /> },
             ]} />}
         </Modal>
     </>;

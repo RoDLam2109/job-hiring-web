@@ -11,10 +11,12 @@ import queryString from 'query-string';
 import { hasPermission } from "@/config/permission";
 import { fetchResume } from "@/redux/slice/resumeSlide";
 import ViewDetailResume from "@/components/admin/resume/view.resume";
+import ResumeFileLink from '@/components/resume-file-link';
 
 const ResumePage = () => {
     const tableRef = useRef<ActionType>();
     const user = useAppSelector(state => state.account.user);
+    const isHr = (typeof user.role === 'string' ? user.role : user.role?.name) === 'HR';
     const canDelete = hasPermission(user, 'DELETE', '/api/v1/resumes/:id');
     const [deletingId, setDeletingId] = useState<string>();
 
@@ -56,6 +58,17 @@ const ResumePage = () => {
     }
 
     const columns: ProColumns<IResume>[] = [
+        {
+            title: 'Email ứng viên',
+            dataIndex: 'email',
+            hideInSearch: true,
+        },
+        {
+            title: 'File CV',
+            dataIndex: 'url',
+            hideInSearch: true,
+            render: (_, record) => <ResumeFileLink url={record.url} />,
+        },
         {
             title: 'Id',
             dataIndex: '_id',
@@ -198,7 +211,7 @@ const ResumePage = () => {
                 action={<Button onClick={reloadTable} disabled={isFetching}>Thử lại</Button>} />}
             <DataTable<IResume>
                 actionRef={tableRef}
-                headerTitle="Danh sách Resumes"
+                headerTitle={isHr ? 'CV ứng tuyển vào công ty' : 'Danh sách Resumes'}
                 rowKey="_id"
                 loading={isFetching}
                 columns={columns}
