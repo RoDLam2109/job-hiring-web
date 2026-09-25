@@ -29,7 +29,7 @@ export class MulterConfigService implements MulterOptionsFactory {
     });
     const memory = memoryStorage();
     const selectStorage = (req: any): StorageEngine =>
-      req.headers.folder_type === 'company' ? memory : disk;
+      ['company', 'resume'].includes(req.headers.folder_type) ? memory : disk;
     return {
       limits: { fileSize: 2 * 1024 * 1024, files: 1 },
       fileFilter: (req, file, cb) => {

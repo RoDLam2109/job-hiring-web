@@ -33,6 +33,9 @@ export class FilesController {
         if (folderType === 'company') {
           return { fileName: await this.cloudinaryService.uploadCompanyLogo(file.buffer) };
         }
+        if (folderType === 'resume') {
+          return { fileName: await this.cloudinaryService.uploadResume(file.buffer, file.originalname) };
+        }
         return {
           fileName: file.filename
         }
