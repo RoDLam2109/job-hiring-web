@@ -5,6 +5,9 @@ import { UpdateResumeDto } from './dto/update-resume.dto';
 import { ResponseMessage, SkipPermission, User } from '@/decorator/customize';
 import { IUser } from '@/users/users.interface';
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('resumes')
 @Controller('resumes')
 export class ResumesController {
   constructor(private readonly resumesService: ResumesService) { }

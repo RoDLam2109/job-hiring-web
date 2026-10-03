@@ -12,6 +12,8 @@ import passport from "passport"
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { TransformInterceptor } from './core/transform.interceptor';
 import { getUploadDirectory, PUBLIC_DIRECTORY } from './files/upload-path';
+import helmet from 'helmet';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(
@@ -71,6 +73,34 @@ async function bootstrap() {
     type: VersioningType.URI,
     defaultVersion: ['1', '2'],
   });
+
+  //config helmet 
+  app.use(helmet())
+
+  //config swagger
+  const config = new DocumentBuilder()
+    .setTitle('NestJS Series APIs Document')
+    .setDescription('All Modules APIs')
+    .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'Bearer',
+        bearerFormat: 'JWT',
+        in: 'header',
+      },
+      'token',
+    )
+    .addSecurityRequirements('token')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('swagger', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+    }
+  });
+
   await app.listen(port);
 }
 bootstrap();

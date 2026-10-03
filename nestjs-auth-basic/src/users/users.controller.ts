@@ -6,6 +6,9 @@ import { IUser } from './users.interface';
 import { Public, ResponseMessage, SkipPermission, User } from '@/decorator/customize';
 import { UpdatePhoneDto, ChangePasswordDto } from './dto/account-settings.dto';
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }

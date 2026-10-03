@@ -6,6 +6,9 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { SkipPermission, ResponseMessage } from '@/decorator/customize';
 import { CloudinaryService } from './cloudinary.service';
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('files')
 @Controller('files')
 export class FilesController {
   constructor(

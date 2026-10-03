@@ -5,6 +5,9 @@ import { UpdateSubcriberDto } from './dto/update-subcribers.dto';
 import { Public, ResponseMessage, SkipCheckPermission, User } from '@/decorator/customize';
 import { IUser } from '@/users/users.interface';
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('subscribers')
 @Controller('subscribers')
 export class SubscribersController {
   constructor(private readonly subscribersService: SubscribersService) { }

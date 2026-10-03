@@ -3,12 +3,15 @@ import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { Public, ResponseMessage, SkipPermission, User } from '@/decorator/customize';
 import { LocalAuthGuard } from './local-auth-guard';
-import { RegisterUserDto } from '@/users/dto/create-user.dto';
+import { RegisterUserDto, UserLoginDto } from '@/users/dto/create-user.dto';
 import { Request as ExpressReq, Response } from 'express'
 import { JwtStrategy } from './passport/jwt.strategy';
 import { IUser } from '@/users/users.interface';
 import { RolesService } from '@/roles/roles.service';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { ApiBody, ApiTags } from '@nestjs/swagger';
 
+@ApiTags("auth")
 @Controller("auth")
 export class AuthController {
     constructor(
@@ -17,6 +20,9 @@ export class AuthController {
     ) { }
     @Public()
     @UseGuards(LocalAuthGuard)
+    @UseGuards(ThrottlerGuard)
+    @ApiBody({ type: UserLoginDto, })
+    @Throttle(5, 60)
     @Post('/login')
     @ResponseMessage('User login')
     handleLogin(@Res({ passthrough: true }) response: Response,

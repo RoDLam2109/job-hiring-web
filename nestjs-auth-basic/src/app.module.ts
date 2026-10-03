@@ -16,35 +16,42 @@ import { DatabasesModule } from './databases/databases.module';
 import { SubcribersModule } from './subcribers/subscribers.module';
 import { MailModule } from './mail/mail.module';
 import { ScheduleModule } from '@nestjs/schedule'
-  @Module({
-    imports: [
-      ConfigModule.forRoot({ isGlobal: true }),
-      ScheduleModule.forRoot(),
-      MongooseModule.forRootAsync({
-        imports: [ConfigModule],
-        useFactory: async (configService: ConfigService) => ({
-          uri: configService.get<string>("MONGODB_URI"),
-          connectionFactory: (connection) => {
-            connection.plugin(softDeletePlugin);
-            return connection;
-          }
-        }),
-        inject: [ConfigService],
+import { ThrottlerModule } from '@nestjs/throttler';
+import { HealthModule } from './health/health.module';
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRoot({
+      ttl: 60,
+      limit: 10,
+    }),
+    ScheduleModule.forRoot(),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>("MONGODB_URI"),
+        connectionFactory: (connection) => {
+          connection.plugin(softDeletePlugin);
+          return connection;
+        }
       }),
-      UsersModule,
-      AuthModule,
-      CompaniesModule,
-      JobsModule,
-      FilesModule,
-      ResumesModule,
-      PermissionsModule,
-      RolesModule,
-      DatabasesModule,
-      SubcribersModule,
-      MailModule
-    ],
-    controllers: [AppController],
-    providers: [AppService,
-    ]
-  })
-  export class AppModule { }
+      inject: [ConfigService],
+    }),
+    UsersModule,
+    AuthModule,
+    CompaniesModule,
+    JobsModule,
+    FilesModule,
+    ResumesModule,
+    PermissionsModule,
+    RolesModule,
+    DatabasesModule,
+    SubcribersModule,
+    MailModule,
+    HealthModule
+  ],
+  controllers: [AppController],
+  providers: [AppService,
+  ]
+})
+export class AppModule { }
